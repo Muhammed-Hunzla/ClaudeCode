@@ -838,6 +838,10 @@ add_marketplace "daymade/claude-code-skills"                           "daymade-
 add_marketplace "ruslan-korneev/python-backend-claude-plugins"         "python-backend-plugins"
 add_marketplace "obra/superpowers"                                     "superpowers-dev"
 
+# Wait for marketplaces to sync before installing plugins
+log "Waiting for marketplaces to sync..."
+sleep 5
+
 # =============================================================================
 # 14. PLUGINS (59 total)
 # =============================================================================
@@ -845,14 +849,23 @@ step "14/15  Installing Plugins"
 
 install_plugin() {
   local plugin="$1"
-  output=$(claude plugin install "$plugin" 2>&1)
-  if echo "$output" | grep -q "Successfully installed"; then
-    success "$plugin"
-  elif echo "$output" | grep -q "already installed"; then
-    success "$plugin (already installed)"
-  else
-    fail "$plugin — $(echo "$output" | grep -v '^$' | tail -1)"
-  fi
+  local attempt=1
+  local max_attempts=2
+  while [ $attempt -le $max_attempts ]; do
+    output=$(claude plugin install "$plugin" 2>&1)
+    if echo "$output" | grep -qi "success"; then
+      success "$plugin"
+      return
+    elif echo "$output" | grep -qi "already installed"; then
+      success "$plugin (already installed)"
+      return
+    fi
+    if [ $attempt -lt $max_attempts ]; then
+      sleep 2
+    fi
+    attempt=$((attempt + 1))
+  done
+  fail "$plugin — $(echo "$output" | grep -v '^$' | tail -1)"
 }
 
 echo ""
@@ -932,194 +945,138 @@ install_plugin "zazen@daviguides"
 # =============================================================================
 step "15/15  Writing ~/.claude/settings.json"
 
-# Build platform-specific notification commands
+# Write settings.json using a Python one-liner to guarantee valid JSON
+# This avoids heredoc escaping issues with double quotes in notification commands
 if [ "$OS" = "mac" ]; then
   NOTIFY_CMD="osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\" sound name \"Glass\"' 2>/dev/null || true"
   STOP_NOTIFY_CMD="osascript -e 'display notification \"Claude Code has finished\" with title \"Claude Code\" sound name \"Ping\"' 2>/dev/null || true"
-  SYNC_CMD="bash /Users/hunzla/Documents/GitHub/ClaudeCode/sync-setup.sh 2>&1 | tail -3 || true"
+  SYNC_CMD="bash $HOME/Documents/GitHub/ClaudeCode/sync-setup.sh 2>&1 | tail -3 || true"
 elif [ "$OS" = "windows" ]; then
-  NOTIFY_CMD="powershell -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; [System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention','Claude Code','OK','Information')\" 2>/dev/null || true"
-  STOP_NOTIFY_CMD="powershell -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; [System.Windows.Forms.MessageBox]::Show('Claude Code has finished','Claude Code','OK','Information')\" 2>/dev/null || true"
-  SYNC_CMD="echo '[sync] SessionEnd sync not configured for Windows yet'"
+  NOTIFY_CMD="powershell -Command \"[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [void][System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention','Claude Code')\" 2>/dev/null || true"
+  STOP_NOTIFY_CMD="powershell -Command \"[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [void][System.Windows.Forms.MessageBox]::Show('Claude Code has finished','Claude Code')\" 2>/dev/null || true"
+  SYNC_CMD="echo [sync] SessionEnd sync not configured for Windows yet"
 else
-  NOTIFY_CMD="echo 'Claude Code needs your attention'"
-  STOP_NOTIFY_CMD="echo 'Claude Code has finished'"
-  SYNC_CMD="echo '[sync] SessionEnd sync not configured for this OS'"
+  NOTIFY_CMD="echo Claude Code needs your attention"
+  STOP_NOTIFY_CMD="echo Claude Code has finished"
+  SYNC_CMD="echo [sync] SessionEnd sync not configured for this OS"
 fi
 
-cat > ~/.claude/settings.json << JSON
-{
-  "env": {
-    "ANTHROPIC_BASE_URL": "http://localhost:3131"
+python3 -c "
+import json, os, sys
+
+notify = sys.argv[1]
+stop_notify = sys.argv[2]
+sync_cmd = sys.argv[3]
+
+settings = {
+  'env': {
+    'ANTHROPIC_BASE_URL': 'http://localhost:3131'
   },
-  "permissions": {
-    "allow": [
-      "Bash(*)",
-      "Read(*)",
-      "Write(*)",
-      "Edit(*)",
-      "Glob(*)",
-      "Grep(*)",
-      "Agent(*)"
-    ],
-    "deny": []
+  'permissions': {
+    'allow': ['Bash(*)', 'Read(*)', 'Write(*)', 'Edit(*)', 'Glob(*)', 'Grep(*)', 'Agent(*)'],
+    'deny': []
   },
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${NOTIFY_CMD}"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${STOP_NOTIFY_CMD}"
-          },
-          {
-            "type": "command",
-            "command": "echo '\n[MAINTENANCE CHECK] Before this session ends:\n  1. Was CHANGELOG.md updated under [Unreleased]?\n  2. Was PROJECT_SCOPE.md updated (In Progress / Current State / Known Issues)?\n  If not — do it now before responding as done.'"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -f PROJECT_SCOPE.md ] && echo '[SESSION START] PROJECT_SCOPE.md found. Read it before starting.' || echo '[SESSION START] No PROJECT_SCOPE.md found. If this is a project, bootstrap required files from ~/.claude/templates/ first.'"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${SYNC_CMD}"
-          }
-        ]
-      }
-    ]
+  'hooks': {
+    'Notification': [{
+      'matcher': '',
+      'hooks': [{'type': 'command', 'command': notify}]
+    }],
+    'Stop': [{
+      'matcher': '',
+      'hooks': [
+        {'type': 'command', 'command': stop_notify},
+        {'type': 'command', 'command': \"echo '\\\\n[MAINTENANCE CHECK] Before this session ends:\\\\n  1. Was CHANGELOG.md updated under [Unreleased]?\\\\n  2. Was PROJECT_SCOPE.md updated (In Progress / Current State / Known Issues)?\\\\n  If not — do it now before responding as done.'\"}
+      ]
+    }],
+    'UserPromptSubmit': [{
+      'matcher': '',
+      'hooks': [{'type': 'command', 'command': \"[ -f PROJECT_SCOPE.md ] && echo '[SESSION START] PROJECT_SCOPE.md found. Read it before starting.' || echo '[SESSION START] No PROJECT_SCOPE.md found. If this is a project, bootstrap required files from ~/.claude/templates/ first.'\"}]
+    }],
+    'SessionEnd': [{
+      'matcher': '',
+      'hooks': [{'type': 'command', 'command': sync_cmd}]
+    }]
   },
-  "enabledPlugins": {
-    "commit-commands@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "agent-sdk-dev@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "playground@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "plugin-dev@claude-plugins-official": true,
-    "ralph-loop@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "serena@claude-plugins-official": true,
-    "superpowers@superpowers-dev": true,
-    "react-best-practices@claude-skills": true,
-    "tailwind-v4-shadcn@claude-skills": true,
-    "shadcn-vue@claude-skills": true,
-    "nextjs@claude-skills": true,
-    "mobile-first-design@claude-skills": true,
-    "react-hook-form-zod@claude-skills": true,
-    "aceternity-ui@claude-skills": true,
-    "responsive-web-design@claude-skills": true,
-    "design-system-creation@claude-skills": true,
-    "react-composition-patterns@claude-skills": true,
-    "design-review@claude-skills": true,
-    "inspira-ui@claude-skills": true,
-    "interaction-design@claude-skills": true,
-    "frontend-design@claude-skills": true,
-    "tech-lead@python-backend-plugins": true,
-    "python-development@ando-marketplace": true,
-    "unit-testing@ando-marketplace": true,
-    "agent-orchestration@ando-marketplace": true,
-    "llm-application-dev@ando-marketplace": true,
-    "error-debugging@ando-marketplace": true,
-    "debugging-toolkit@ando-marketplace": true,
-    "backend-development@ando-marketplace": true,
-    "code-refactoring@ando-marketplace": true,
-    "ml-model-training@claude-skills": true,
-    "python@python-backend-plugins": true,
-    "fastapi@python-backend-plugins": true,
-    "tdd-workflows@ando-marketplace": true,
-    "machine-learning-ops@ando-marketplace": true,
-    "context-management@ando-marketplace": true,
-    "engineering-workflow-tools@ando-marketplace": true,
-    "dependency-management@ando-marketplace": true,
-    "code-review-ai@ando-marketplace": true,
-    "shodo@daviguides": true,
-    "zazen@daviguides": true,
-    "arche@daviguides": true,
-    "ml-pipeline-automation@claude-skills": true,
-    "claude-agent-sdk@claude-skills": true,
-    "autopilot@local": true,
-    "orchestration@local": true,
-    "workflow-orchestrator@local": true
+  'enabledPlugins': {
+    'commit-commands@claude-plugins-official': True,
+    'code-review@claude-plugins-official': True,
+    'pr-review-toolkit@claude-plugins-official': True,
+    'feature-dev@claude-plugins-official': True,
+    'security-guidance@claude-plugins-official': True,
+    'frontend-design@claude-plugins-official': True,
+    'agent-sdk-dev@claude-plugins-official': True,
+    'claude-md-management@claude-plugins-official': True,
+    'hookify@claude-plugins-official': True,
+    'skill-creator@claude-plugins-official': True,
+    'code-simplifier@claude-plugins-official': True,
+    'playground@claude-plugins-official': True,
+    'claude-code-setup@claude-plugins-official': True,
+    'plugin-dev@claude-plugins-official': True,
+    'ralph-loop@claude-plugins-official': True,
+    'typescript-lsp@claude-plugins-official': True,
+    'pyright-lsp@claude-plugins-official': True,
+    'github@claude-plugins-official': True,
+    'context7@claude-plugins-official': True,
+    'playwright@claude-plugins-official': True,
+    'serena@claude-plugins-official': True,
+    'superpowers@superpowers-dev': True,
+    'react-best-practices@claude-skills': True,
+    'tailwind-v4-shadcn@claude-skills': True,
+    'shadcn-vue@claude-skills': True,
+    'nextjs@claude-skills': True,
+    'mobile-first-design@claude-skills': True,
+    'react-hook-form-zod@claude-skills': True,
+    'aceternity-ui@claude-skills': True,
+    'responsive-web-design@claude-skills': True,
+    'design-system-creation@claude-skills': True,
+    'react-composition-patterns@claude-skills': True,
+    'design-review@claude-skills': True,
+    'inspira-ui@claude-skills': True,
+    'interaction-design@claude-skills': True,
+    'frontend-design@claude-skills': True,
+    'tech-lead@python-backend-plugins': True,
+    'python-development@ando-marketplace': True,
+    'unit-testing@ando-marketplace': True,
+    'agent-orchestration@ando-marketplace': True,
+    'llm-application-dev@ando-marketplace': True,
+    'error-debugging@ando-marketplace': True,
+    'debugging-toolkit@ando-marketplace': True,
+    'backend-development@ando-marketplace': True,
+    'code-refactoring@ando-marketplace': True,
+    'ml-model-training@claude-skills': True,
+    'python@python-backend-plugins': True,
+    'fastapi@python-backend-plugins': True,
+    'tdd-workflows@ando-marketplace': True,
+    'machine-learning-ops@ando-marketplace': True,
+    'context-management@ando-marketplace': True,
+    'engineering-workflow-tools@ando-marketplace': True,
+    'dependency-management@ando-marketplace': True,
+    'code-review-ai@ando-marketplace': True,
+    'shodo@daviguides': True,
+    'zazen@daviguides': True,
+    'arche@daviguides': True,
+    'ml-pipeline-automation@claude-skills': True,
+    'claude-agent-sdk@claude-skills': True,
+    'autopilot@local': True,
+    'orchestration@local': True,
+    'workflow-orchestrator@local': True
   },
-  "extraKnownMarketplaces": {
-    "superpowers-dev": {
-      "source": {
-        "source": "github",
-        "repo": "obra/superpowers"
-      }
-    },
-    "claude-skills": {
-      "source": {
-        "source": "github",
-        "repo": "secondsky/claude-skills"
-      }
-    },
-    "ando-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "kivilaid/plugin-marketplace"
-      }
-    },
-    "daymade-skills": {
-      "source": {
-        "source": "github",
-        "repo": "daymade/claude-code-skills"
-      }
-    },
-    "daviguides": {
-      "source": {
-        "source": "github",
-        "repo": "daviguides/claude-marketplace"
-      }
-    },
-    "python-backend-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "ruslan-korneev/python-backend-claude-plugins"
-      }
-    }
+  'extraKnownMarketplaces': {
+    'superpowers-dev': {'source': {'source': 'github', 'repo': 'obra/superpowers'}},
+    'claude-skills': {'source': {'source': 'github', 'repo': 'secondsky/claude-skills'}},
+    'ando-marketplace': {'source': {'source': 'github', 'repo': 'kivilaid/plugin-marketplace'}},
+    'daymade-skills': {'source': {'source': 'github', 'repo': 'daymade/claude-code-skills'}},
+    'daviguides': {'source': {'source': 'github', 'repo': 'daviguides/claude-marketplace'}},
+    'python-backend-plugins': {'source': {'source': 'github', 'repo': 'ruslan-korneev/python-backend-claude-plugins'}}
   },
-  "voiceEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  'voiceEnabled': True,
+  'skipDangerousModePermissionPrompt': True
 }
-JSON
+
+out = os.path.expanduser('~/.claude/settings.json')
+with open(out, 'w') as f:
+    json.dump(settings, f, indent=2)
+" "$NOTIFY_CMD" "$STOP_NOTIFY_CMD" "$SYNC_CMD"
 
 success "~/.claude/settings.json written"
 
