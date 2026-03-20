@@ -138,6 +138,16 @@ if m:
     content = content[:m.start()] + mkt_add_block + "\n" + content[m.end():]
     changed = True
 
+# --- Replace the entire settings.json heredoc block ---
+settings_formatted = json.dumps(settings, indent=2)
+pattern = r"cat > ~/\.claude/settings\.json << 'JSON'\n.*?\nJSON"
+m = re.search(pattern, content, re.DOTALL)
+if m:
+    new_block = "cat > ~/.claude/settings.json << 'JSON'\n" + settings_formatted + "\nJSON"
+    if m.group(0) != new_block:
+        content = content[:m.start()] + new_block + content[m.end():]
+        changed = True
+
 # --- Update counts ---
 for old, new in [
     (r'#   5\.\s+\d+\+ plugins across all categories',

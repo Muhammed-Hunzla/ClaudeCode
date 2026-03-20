@@ -870,7 +870,7 @@ cat > ~/.claude/settings.json << 'JSON'
           },
           {
             "type": "command",
-            "command": "echo '\n[MAINTENANCE CHECK] Before this session ends:\n  1. Was CHANGELOG.md updated under [Unreleased]?\n  2. Was PROJECT_SCOPE.md updated (In Progress / Current State / Known Issues)?\n  If not — do it now before responding as done.'"
+            "command": "echo '\n[MAINTENANCE CHECK] Before this session ends:\n  1. Was CHANGELOG.md updated under [Unreleased]?\n  2. Was PROJECT_SCOPE.md updated (In Progress / Current State / Known Issues)?\n  If not \u2014 do it now before responding as done.'"
           }
         ]
       }
@@ -885,95 +885,123 @@ cat > ~/.claude/settings.json << 'JSON'
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/hunzla/Documents/GitHub/ClaudeCode/sync-setup.sh 2>&1 | tail -3 || true"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
-    "aceternity-ui@claude-skills": true,
-    "agent-orchestration@ando-marketplace": true,
-    "agent-sdk-dev@claude-plugins-official": true,
-    "arche@daviguides": true,
-    "autopilot@local": true,
-    "backend-development@ando-marketplace": true,
-    "claude-agent-sdk@claude-skills": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "code-refactoring@ando-marketplace": true,
-    "code-review-ai@ando-marketplace": true,
-    "code-review@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
-    "context-management@ando-marketplace": true,
-    "context7@claude-plugins-official": true,
-    "debugging-toolkit@ando-marketplace": true,
-    "dependency-management@ando-marketplace": true,
-    "design-review@claude-skills": true,
-    "design-system-creation@claude-skills": true,
-    "engineering-workflow-tools@ando-marketplace": true,
-    "error-debugging@ando-marketplace": true,
-    "fastapi@python-backend-plugins": true,
+    "code-review@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "frontend-design@claude-skills": true,
-    "github@claude-plugins-official": true,
+    "agent-sdk-dev@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
     "hookify@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "playground@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "plugin-dev@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "serena@claude-plugins-official": true,
+    "superpowers@superpowers-dev": true,
+    "react-best-practices@claude-skills": true,
+    "tailwind-v4-shadcn@claude-skills": true,
+    "shadcn-vue@claude-skills": true,
+    "nextjs@claude-skills": true,
+    "mobile-first-design@claude-skills": true,
+    "react-hook-form-zod@claude-skills": true,
+    "aceternity-ui@claude-skills": true,
+    "responsive-web-design@claude-skills": true,
+    "design-system-creation@claude-skills": true,
+    "react-composition-patterns@claude-skills": true,
+    "design-review@claude-skills": true,
     "inspira-ui@claude-skills": true,
     "interaction-design@claude-skills": true,
-    "llm-application-dev@ando-marketplace": true,
-    "machine-learning-ops@ando-marketplace": true,
-    "ml-model-training@claude-skills": true,
-    "ml-pipeline-automation@claude-skills": true,
-    "mobile-first-design@claude-skills": true,
-    "nextjs@claude-skills": true,
-    "orchestration@local": true,
-    "playground@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "plugin-dev@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true,
-    "python-development@ando-marketplace": true,
-    "python@python-backend-plugins": true,
-    "ralph-loop@claude-plugins-official": true,
-    "react-best-practices@claude-skills": true,
-    "react-composition-patterns@claude-skills": true,
-    "react-hook-form-zod@claude-skills": true,
-    "responsive-web-design@claude-skills": true,
-    "security-guidance@claude-plugins-official": true,
-    "serena@claude-plugins-official": true,
-    "shadcn-vue@claude-skills": true,
-    "shodo@daviguides": true,
-    "skill-creator@claude-plugins-official": true,
-    "superpowers@superpowers-dev": true,
-    "tailwind-v4-shadcn@claude-skills": true,
-    "tdd-workflows@ando-marketplace": true,
+    "frontend-design@claude-skills": true,
     "tech-lead@python-backend-plugins": true,
-    "typescript-lsp@claude-plugins-official": true,
+    "python-development@ando-marketplace": true,
     "unit-testing@ando-marketplace": true,
-    "workflow-orchestrator@local": true,
-    "zazen@daviguides": true
+    "agent-orchestration@ando-marketplace": true,
+    "llm-application-dev@ando-marketplace": true,
+    "error-debugging@ando-marketplace": true,
+    "debugging-toolkit@ando-marketplace": true,
+    "backend-development@ando-marketplace": true,
+    "code-refactoring@ando-marketplace": true,
+    "ml-model-training@claude-skills": true,
+    "python@python-backend-plugins": true,
+    "fastapi@python-backend-plugins": true,
+    "tdd-workflows@ando-marketplace": true,
+    "machine-learning-ops@ando-marketplace": true,
+    "context-management@ando-marketplace": true,
+    "engineering-workflow-tools@ando-marketplace": true,
+    "dependency-management@ando-marketplace": true,
+    "code-review-ai@ando-marketplace": true,
+    "shodo@daviguides": true,
+    "zazen@daviguides": true,
+    "arche@daviguides": true,
+    "ml-pipeline-automation@claude-skills": true,
+    "claude-agent-sdk@claude-skills": true,
+    "autopilot@local": true,
+    "orchestration@local": true,
+    "workflow-orchestrator@local": true
   },
   "extraKnownMarketplaces": {
-    "ando-marketplace": {
-      "source": { "source": "github", "repo": "kivilaid/plugin-marketplace" }
+    "superpowers-dev": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers"
+      }
     },
     "claude-skills": {
-      "source": { "source": "github", "repo": "secondsky/claude-skills" }
+      "source": {
+        "source": "github",
+        "repo": "secondsky/claude-skills"
+      }
     },
-    "daviguides": {
-      "source": { "source": "github", "repo": "daviguides/claude-marketplace" }
+    "ando-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "kivilaid/plugin-marketplace"
+      }
     },
     "daymade-skills": {
-      "source": { "source": "github", "repo": "daymade/claude-code-skills" }
+      "source": {
+        "source": "github",
+        "repo": "daymade/claude-code-skills"
+      }
+    },
+    "daviguides": {
+      "source": {
+        "source": "github",
+        "repo": "daviguides/claude-marketplace"
+      }
     },
     "python-backend-plugins": {
-      "source": { "source": "github", "repo": "ruslan-korneev/python-backend-claude-plugins" }
-    },
-    "superpowers-dev": {
-      "source": { "source": "github", "repo": "obra/superpowers" }
+      "source": {
+        "source": "github",
+        "repo": "ruslan-korneev/python-backend-claude-plugins"
+      }
     }
   },
   "voiceEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "model": "sonnet"
+  "skipDangerousModePermissionPrompt": true
 }
 JSON
 
