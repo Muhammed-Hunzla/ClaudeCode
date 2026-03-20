@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Claude Code Full Setup Script
+# Claude Code Full Setup Script (macOS + Windows)
 # Run this on any new machine to restore the complete Claude Code environment.
 #
 # Usage:
-#   chmod +x ~/.claude/setup.sh && ~/.claude/setup.sh
-#   chmod +x ~/.claude/setup.sh && ~/.claude/setup.sh python   # Python model router
+#   macOS:   chmod +x setup.sh && ./setup.sh
+#   Windows: Open Git Bash, then: bash setup.sh
+#
+# Requirements:
+#   macOS  — Terminal (bash/zsh)
+#   Windows — Git Bash (comes with Git for Windows)
 #
 # What this installs:
-#   1.  System dependencies (Homebrew, Node.js, uv, TypeScript LSP)
+#   1.  System dependencies (Homebrew/winget, Node.js, uv, TypeScript LSP)
 #   2.  Claude Code CLI
 #   3.  Custom personal skills (explain-code, debug-helper, test-writer)
 #   4.  6 plugin marketplaces
@@ -21,17 +25,35 @@
 #   11. Autopilot plugin (multi-agent orchestrator)
 #   12. 2 third-party orchestration plugins (cloned from GitHub)
 #   13. Model router (auto Haiku/Sonnet/Opus routing)
-#   14. CodexBar (menu bar usage monitor)
+#   14. CodexBar (menu bar usage monitor — macOS only)
 #   15. settings.json (hooks, permissions, plugins, MCP config)
 # =============================================================================
 
 set -e
 
+# =============================================================================
+# OS DETECTION
+# =============================================================================
+OS="unknown"
+case "$(uname -s)" in
+  Darwin*)  OS="mac" ;;
+  MINGW*|MSYS*|CYGWIN*|Windows_NT*) OS="windows" ;;
+  Linux*)   OS="linux" ;;
+esac
+
+if [ "$OS" = "unknown" ]; then
+  echo "Unsupported OS: $(uname -s)"
+  exit 1
+fi
+
 ROUTER_MODE="${1:-node}"
 CLAUDE_DIR="$HOME/.claude"
 ROUTER_DIR="$CLAUDE_DIR/model-router"
 LOCAL_PLUGINS="$CLAUDE_DIR/plugins/local"
-LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
+
+if [ "$OS" = "mac" ]; then
+  LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
+fi
 
 BOLD="\033[1m"
 GREEN="\033[0;32m"
@@ -46,39 +68,77 @@ warn()    { echo -e "  ${YELLOW}⚠${RESET}  $1"; }
 fail()    { echo -e "  ${RED}✘${RESET}  $1"; }
 step()    { echo -e "\n${BOLD}${BLUE}$1${RESET}"; }
 
+echo -e "${BOLD}Detected OS: ${GREEN}${OS}${RESET}"
+
 # =============================================================================
 # 1. SYSTEM DEPENDENCIES
 # =============================================================================
 step "1/15  System Dependencies"
 
-# Homebrew (macOS)
-if ! command -v brew &>/dev/null; then
-  log "Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  success "Homebrew installed"
-else
-  success "Homebrew: $(brew --version | head -1)"
+if [ "$OS" = "mac" ]; then
+  # Homebrew (macOS)
+  if ! command -v brew &>/dev/null; then
+    log "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    success "Homebrew installed"
+  else
+    success "Homebrew: $(brew --version | head -1)"
+  fi
+
+  # Node.js
+  if ! command -v node &>/dev/null; then
+    log "Installing Node.js..."
+    brew install node
+    success "Node.js installed"
+  else
+    success "Node.js: $(node --version)"
+  fi
+
+  # uv
+  if ! command -v uv &>/dev/null; then
+    log "Installing uv..."
+    brew install uv
+    success "uv installed"
+  else
+    success "uv: $(uv --version)"
+  fi
+
+elif [ "$OS" = "windows" ]; then
+  # Check for winget
+  if command -v winget &>/dev/null; then
+    success "winget: available"
+  else
+    warn "winget not found — install App Installer from Microsoft Store"
+  fi
+
+  # Node.js
+  if ! command -v node &>/dev/null; then
+    log "Installing Node.js via winget..."
+    winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements 2>/dev/null \
+      && success "Node.js installed (restart Git Bash to use)" \
+      || warn "Failed — install Node.js manually from https://nodejs.org"
+  else
+    success "Node.js: $(node --version)"
+  fi
+
+  # uv
+  if ! command -v uv &>/dev/null; then
+    log "Installing uv..."
+    if command -v winget &>/dev/null; then
+      winget install astral-sh.uv --accept-package-agreements --accept-source-agreements 2>/dev/null \
+        && success "uv installed (restart Git Bash to use)" \
+        || warn "Failed — install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
+    else
+      curl -LsSf https://astral.sh/uv/install.sh | sh 2>/dev/null \
+        && success "uv installed" \
+        || warn "Failed — install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
+    fi
+  else
+    success "uv: $(uv --version)"
+  fi
 fi
 
-# Node.js — required for context7, playwright MCP servers
-if ! command -v node &>/dev/null; then
-  log "Installing Node.js..."
-  brew install node
-  success "Node.js installed"
-else
-  success "Node.js: $(node --version)"
-fi
-
-# uv — required for Serena MCP server
-if ! command -v uv &>/dev/null; then
-  log "Installing uv..."
-  brew install uv
-  success "uv installed"
-else
-  success "uv: $(uv --version)"
-fi
-
-# TypeScript Language Server — for typescript-lsp plugin
+# TypeScript Language Server (cross-platform)
 if ! command -v typescript-language-server &>/dev/null; then
   log "Installing TypeScript Language Server..."
   npm install -g typescript-language-server typescript 2>/dev/null \
@@ -650,12 +710,14 @@ function fwd(h,k){return{'content-type':'application/json','anthropic-version':h
 function proxy(o,b){return new Promise((r,j)=>{let u=new URL(anthropicBaseUrl),p=(u.protocol==='https:'?https:http).request({hostname:u.hostname,port:u.port||443,path:o.path,method:o.method,headers:o.headers},r);p.on('error',j);if(b)p.write(b);p.end()})}
 http.createServer(async(req,res)=>{try{let chunks=[];await new Promise(r=>{req.on('data',c=>chunks.push(c));req.on('end',r)});let raw=Buffer.concat(chunks),key=(req.headers['x-api-key']||req.headers['authorization']||'').replace(/^Bearer /,'');if(req.method==='POST'&&req.url==='/v1/messages'){let body=JSON.parse(raw.toString()),{model,tier}=route(body);if(logging)console.log(`[${new Date().toISOString().slice(11,19)}] ${body.model||'?'} → ${tier.toUpperCase()}`);body.model=model;let m=Buffer.from(JSON.stringify(body)),h=fwd(req.headers,key);h['content-length']=m.length;let u=await proxy({path:req.url,method:req.method,headers:h},m);res.writeHead(u.statusCode,u.headers);u.pipe(res)}else{let h=fwd(req.headers,key);if(raw.length)h['content-length']=raw.length;let u=await proxy({path:req.url,method:req.method,headers:h},raw.length?raw:null);res.writeHead(u.statusCode,u.headers);u.pipe(res)}}catch(e){res.writeHead(502,{'content-type':'application/json'});res.end(JSON.stringify({error:{message:e.message}}))}}).listen(port,'127.0.0.1',()=>console.log(`Model Router on http://127.0.0.1:${port}`));
 ROUTERJS
-chmod +x "$ROUTER_DIR/router.js"
+chmod +x "$ROUTER_DIR/router.js" 2>/dev/null || true
 success "router.js"
 
-# Launchd plist
-NODE_BIN=$(which node 2>/dev/null || echo "/opt/homebrew/bin/node")
-cat > "$ROUTER_DIR/com.claude.model-router-node.plist" << PLIST
+# --- Start the model router (platform-specific) ---
+if [ "$OS" = "mac" ]; then
+  # macOS: use launchd
+  NODE_BIN=$(which node 2>/dev/null || echo "/opt/homebrew/bin/node")
+  cat > "$ROUTER_DIR/com.claude.model-router-node.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -669,45 +731,91 @@ cat > "$ROUTER_DIR/com.claude.model-router-node.plist" << PLIST
   <key>EnvironmentVariables</key><dict><key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string></dict>
 </dict></plist>
 PLIST
-success "launchd plist"
+  success "launchd plist"
 
-# Start router
-if lsof -ti:3131 &>/dev/null; then
-  log "Stopping existing process on port 3131..."
-  kill $(lsof -ti:3131) 2>/dev/null || true
-  sleep 1
-fi
-for label in com.claude.model-router-node com.claude.model-router-python; do
-  launchctl unload "$LAUNCH_AGENTS/$label.plist" 2>/dev/null || true
-  rm -f "$LAUNCH_AGENTS/$label.plist"
-done
-mkdir -p "$LAUNCH_AGENTS"
-cp "$ROUTER_DIR/com.claude.model-router-node.plist" "$LAUNCH_AGENTS/"
-launchctl load "$LAUNCH_AGENTS/com.claude.model-router-node.plist"
-sleep 2
-if lsof -ti:3131 &>/dev/null; then
-  success "Router running on http://localhost:3131"
-else
-  warn "Router failed to start. Check: $ROUTER_DIR/router.log"
+  if lsof -ti:3131 &>/dev/null; then
+    log "Stopping existing process on port 3131..."
+    kill $(lsof -ti:3131) 2>/dev/null || true
+    sleep 1
+  fi
+  for label in com.claude.model-router-node com.claude.model-router-python; do
+    launchctl unload "$LAUNCH_AGENTS/$label.plist" 2>/dev/null || true
+    rm -f "$LAUNCH_AGENTS/$label.plist"
+  done
+  mkdir -p "$LAUNCH_AGENTS"
+  cp "$ROUTER_DIR/com.claude.model-router-node.plist" "$LAUNCH_AGENTS/"
+  launchctl load "$LAUNCH_AGENTS/com.claude.model-router-node.plist"
+  sleep 2
+  if lsof -ti:3131 &>/dev/null; then
+    success "Router running on http://localhost:3131"
+  else
+    warn "Router failed to start. Check: $ROUTER_DIR/router.log"
+  fi
+
+elif [ "$OS" = "windows" ]; then
+  # Windows: use a startup VBS script (runs node in background, no console window)
+  NODE_BIN=$(which node 2>/dev/null || echo "node")
+  # Convert Git Bash paths to Windows paths for the VBS script
+  WIN_ROUTER_DIR=$(cygpath -w "$ROUTER_DIR" 2>/dev/null || echo "$ROUTER_DIR")
+  WIN_NODE_BIN=$(cygpath -w "$NODE_BIN" 2>/dev/null || echo "$NODE_BIN")
+  WIN_STARTUP="$(cygpath -u "$APPDATA/Microsoft/Windows/Start Menu/Programs/Startup" 2>/dev/null)"
+
+  cat > "$ROUTER_DIR/start-router.vbs" << VBSCRIPT
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run """${WIN_NODE_BIN}"" ""${WIN_ROUTER_DIR}\\router.js""", 0, False
+VBSCRIPT
+  success "startup VBS script"
+
+  # Stop any existing router on port 3131
+  if netstat -ano 2>/dev/null | grep -q ":3131 "; then
+    log "Stopping existing process on port 3131..."
+    PID=$(netstat -ano 2>/dev/null | grep ":3131 " | grep "LISTENING" | awk '{print $5}' | head -1)
+    if [ -n "$PID" ] && [ "$PID" != "0" ]; then
+      taskkill //PID "$PID" //F 2>/dev/null || true
+      sleep 1
+    fi
+  fi
+
+  # Copy to Windows Startup folder
+  if [ -n "$WIN_STARTUP" ] && [ -d "$WIN_STARTUP" ]; then
+    cp "$ROUTER_DIR/start-router.vbs" "$WIN_STARTUP/claude-model-router.vbs"
+    success "Added to Windows Startup folder"
+  else
+    warn "Could not find Startup folder — copy start-router.vbs manually"
+  fi
+
+  # Start the router now
+  node "$ROUTER_DIR/router.js" &>/dev/null &
+  ROUTER_PID=$!
+  sleep 2
+  if kill -0 "$ROUTER_PID" 2>/dev/null; then
+    success "Router running on http://localhost:3131 (PID: $ROUTER_PID)"
+  else
+    warn "Router failed to start. Run manually: node $ROUTER_DIR/router.js"
+  fi
 fi
 
 # =============================================================================
-# 12. CODEXBAR
+# 12. CODEXBAR (macOS only)
 # =============================================================================
 step "12/15  CodexBar"
 
-if command -v brew &>/dev/null; then
-  if ! brew list --cask codexbar &>/dev/null 2>&1; then
-    log "Installing CodexBar..."
-    brew tap steipete/tap 2>/dev/null || true
-    brew install --cask steipete/tap/codexbar 2>&1 | tail -2
-    success "CodexBar installed"
+if [ "$OS" = "mac" ]; then
+  if command -v brew &>/dev/null; then
+    if ! brew list --cask codexbar &>/dev/null 2>&1; then
+      log "Installing CodexBar..."
+      brew tap steipete/tap 2>/dev/null || true
+      brew install --cask steipete/tap/codexbar 2>&1 | tail -2
+      success "CodexBar installed"
+    else
+      success "CodexBar already installed"
+    fi
+    [ -d "/Applications/CodexBar.app" ] && open /Applications/CodexBar.app 2>/dev/null || true
   else
-    success "CodexBar already installed"
+    warn "Homebrew not found — install CodexBar manually: brew install --cask steipete/tap/codexbar"
   fi
-  [ -d "/Applications/CodexBar.app" ] && open /Applications/CodexBar.app 2>/dev/null || true
 else
-  warn "Homebrew not found — install CodexBar manually: brew install --cask steipete/tap/codexbar"
+  warn "CodexBar is macOS-only — skipped on $OS"
 fi
 
 # =============================================================================
@@ -731,7 +839,7 @@ add_marketplace "ruslan-korneev/python-backend-claude-plugins"         "python-b
 add_marketplace "obra/superpowers"                                     "superpowers-dev"
 
 # =============================================================================
-# 5. PLUGINS (59 total)
+# 14. PLUGINS (59 total)
 # =============================================================================
 step "14/15  Installing Plugins"
 
@@ -820,18 +928,26 @@ install_plugin "shodo@daviguides"
 install_plugin "zazen@daviguides"
 
 # =============================================================================
-# 6. SETTINGS.JSON
+# 15. SETTINGS.JSON
 # =============================================================================
 step "15/15  Writing ~/.claude/settings.json"
 
-# NOTE: ANTHROPIC_BASE_URL points to a local proxy (http://localhost:3131).
-# If you are NOT using a local proxy/router, remove the "env" block below,
-# or change the URL to https://api.anthropic.com
-#
-# GitHub MCP requires: export GITHUB_PERSONAL_ACCESS_TOKEN=your_token
-# Add that line to your ~/.zshrc or ~/.bash_profile.
+# Build platform-specific notification commands
+if [ "$OS" = "mac" ]; then
+  NOTIFY_CMD="osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\" sound name \"Glass\"' 2>/dev/null || true"
+  STOP_NOTIFY_CMD="osascript -e 'display notification \"Claude Code has finished\" with title \"Claude Code\" sound name \"Ping\"' 2>/dev/null || true"
+  SYNC_CMD="bash /Users/hunzla/Documents/GitHub/ClaudeCode/sync-setup.sh 2>&1 | tail -3 || true"
+elif [ "$OS" = "windows" ]; then
+  NOTIFY_CMD="powershell -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; [System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention','Claude Code','OK','Information')\" 2>/dev/null || true"
+  STOP_NOTIFY_CMD="powershell -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; [System.Windows.Forms.MessageBox]::Show('Claude Code has finished','Claude Code','OK','Information')\" 2>/dev/null || true"
+  SYNC_CMD="echo '[sync] SessionEnd sync not configured for Windows yet'"
+else
+  NOTIFY_CMD="echo 'Claude Code needs your attention'"
+  STOP_NOTIFY_CMD="echo 'Claude Code has finished'"
+  SYNC_CMD="echo '[sync] SessionEnd sync not configured for this OS'"
+fi
 
-cat > ~/.claude/settings.json << 'JSON'
+cat > ~/.claude/settings.json << JSON
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://localhost:3131"
@@ -855,7 +971,7 @@ cat > ~/.claude/settings.json << 'JSON'
         "hooks": [
           {
             "type": "command",
-            "command": "osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\" sound name \"Glass\"' 2>/dev/null || true"
+            "command": "${NOTIFY_CMD}"
           }
         ]
       }
@@ -866,11 +982,11 @@ cat > ~/.claude/settings.json << 'JSON'
         "hooks": [
           {
             "type": "command",
-            "command": "osascript -e 'display notification \"Claude Code has finished\" with title \"Claude Code\" sound name \"Ping\"' 2>/dev/null || true"
+            "command": "${STOP_NOTIFY_CMD}"
           },
           {
             "type": "command",
-            "command": "echo '\n[MAINTENANCE CHECK] Before this session ends:\n  1. Was CHANGELOG.md updated under [Unreleased]?\n  2. Was PROJECT_SCOPE.md updated (In Progress / Current State / Known Issues)?\n  If not \u2014 do it now before responding as done.'"
+            "command": "echo '\n[MAINTENANCE CHECK] Before this session ends:\n  1. Was CHANGELOG.md updated under [Unreleased]?\n  2. Was PROJECT_SCOPE.md updated (In Progress / Current State / Known Issues)?\n  If not — do it now before responding as done.'"
           }
         ]
       }
@@ -892,7 +1008,7 @@ cat > ~/.claude/settings.json << 'JSON'
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/hunzla/Documents/GitHub/ClaudeCode/sync-setup.sh 2>&1 | tail -3 || true"
+            "command": "${SYNC_CMD}"
           }
         ]
       }
@@ -1015,6 +1131,7 @@ echo -e "${BOLD}${GREEN}╔═════════════════�
 echo -e "${BOLD}${GREEN}║         Claude Code Setup Complete!                  ║${RESET}"
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
+echo -e "  OS           : ${BOLD}${OS}${RESET}"
 echo -e "  Plugins      : 59+ marketplace + 3 local (autopilot, orchestration, workflow)"
 echo -e "  Skills       : 3 custom (explain-code · debug-helper · test-writer)"
 echo -e "  Marketplaces : 6"
@@ -1023,12 +1140,19 @@ echo -e "  Rules        : 4 modules (project-standards · maintenance · workflo
 echo -e "  Templates    : 5 (CLAUDE.md · PROJECT_SCOPE · CHANGELOG · DECISIONS · KNOWN_ISSUES)"
 echo -e "  Commands     : /bootstrap · /release · /autopilot · /quick-autopilot"
 echo -e "  Model router : Haiku/Sonnet/Opus on http://localhost:3131"
-echo -e "  CodexBar     : Menu bar usage monitor"
+if [ "$OS" = "mac" ]; then
+  echo -e "  CodexBar     : Menu bar usage monitor"
+fi
 echo ""
 echo -e "${YELLOW}  Action required:${RESET}"
 echo ""
-echo "  1. Add to ~/.zshrc for GitHub MCP:"
-echo "       export GITHUB_PERSONAL_ACCESS_TOKEN=your_token_here"
+if [ "$OS" = "mac" ]; then
+  echo "  1. Add to ~/.zshrc for GitHub MCP:"
+  echo "       export GITHUB_PERSONAL_ACCESS_TOKEN=your_token_here"
+elif [ "$OS" = "windows" ]; then
+  echo "  1. Set environment variable for GitHub MCP:"
+  echo "       setx GITHUB_PERSONAL_ACCESS_TOKEN your_token_here"
+fi
 echo ""
 echo "  2. If you are NOT using a local API proxy, remove the"
 echo "     \"env\": {\"ANTHROPIC_BASE_URL\": ...} block from ~/.claude/settings.json"
