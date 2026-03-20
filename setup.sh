@@ -12,7 +12,7 @@
 #   2.  Claude Code CLI
 #   3.  Custom personal skills (explain-code, debug-helper, test-writer)
 #   4.  6 plugin marketplaces
-#   5.  55+ plugins across all categories
+#   5.  59+ plugins across all categories
 #   6.  CLAUDE.md (user-level config router)
 #   7.  4 rule modules (rules/)
 #   8.  5 project templates (templates/)
@@ -723,12 +723,12 @@ add_marketplace() {
     && success "$label" || fail "$label"
 }
 
-add_marketplace "obra/superpowers"                           "superpowers-dev"
-add_marketplace "secondsky/claude-skills"                    "claude-skills"
-add_marketplace "kivilaid/plugin-marketplace"                "ando-marketplace"
-add_marketplace "daymade/claude-code-skills"                 "daymade-skills"
-add_marketplace "daviguides/claude-marketplace"              "daviguides"
-add_marketplace "ruslan-korneev/python-backend-claude-plugins" "python-backend-plugins"
+add_marketplace "kivilaid/plugin-marketplace"                          "ando-marketplace"
+add_marketplace "secondsky/claude-skills"                              "claude-skills"
+add_marketplace "daviguides/claude-marketplace"                        "daviguides"
+add_marketplace "daymade/claude-code-skills"                           "daymade-skills"
+add_marketplace "ruslan-korneev/python-backend-claude-plugins"         "python-backend-plugins"
+add_marketplace "obra/superpowers"                                     "superpowers-dev"
 
 # =============================================================================
 # 5. PLUGINS (59 total)
@@ -749,83 +749,75 @@ install_plugin() {
 
 echo ""
 echo "  Official Anthropic"
-install_plugin "commit-commands@claude-plugins-official"
-install_plugin "code-review@claude-plugins-official"
-install_plugin "pr-review-toolkit@claude-plugins-official"
-install_plugin "feature-dev@claude-plugins-official"
-install_plugin "security-guidance@claude-plugins-official"
-install_plugin "frontend-design@claude-plugins-official"
 install_plugin "agent-sdk-dev@claude-plugins-official"
-install_plugin "claude-md-management@claude-plugins-official"
-install_plugin "hookify@claude-plugins-official"
-install_plugin "skill-creator@claude-plugins-official"
-install_plugin "code-simplifier@claude-plugins-official"
-install_plugin "playground@claude-plugins-official"
 install_plugin "claude-code-setup@claude-plugins-official"
-install_plugin "plugin-dev@claude-plugins-official"
-install_plugin "ralph-loop@claude-plugins-official"
-install_plugin "typescript-lsp@claude-plugins-official"
-install_plugin "pyright-lsp@claude-plugins-official"
-install_plugin "github@claude-plugins-official"
+install_plugin "claude-md-management@claude-plugins-official"
+install_plugin "code-review@claude-plugins-official"
+install_plugin "code-simplifier@claude-plugins-official"
+install_plugin "commit-commands@claude-plugins-official"
 install_plugin "context7@claude-plugins-official"
+install_plugin "feature-dev@claude-plugins-official"
+install_plugin "frontend-design@claude-plugins-official"
+install_plugin "github@claude-plugins-official"
+install_plugin "hookify@claude-plugins-official"
+install_plugin "playground@claude-plugins-official"
 install_plugin "playwright@claude-plugins-official"
+install_plugin "plugin-dev@claude-plugins-official"
+install_plugin "pr-review-toolkit@claude-plugins-official"
+install_plugin "pyright-lsp@claude-plugins-official"
+install_plugin "ralph-loop@claude-plugins-official"
+install_plugin "security-guidance@claude-plugins-official"
 install_plugin "serena@claude-plugins-official"
-
+install_plugin "skill-creator@claude-plugins-official"
+install_plugin "typescript-lsp@claude-plugins-official"
 echo ""
 echo "  Superpowers (TDD · Debugging · Agent Patterns)"
 install_plugin "superpowers@superpowers-dev"
-
 echo ""
-echo "  Frontend / UI (shadcn · Tailwind · React · Next.js)"
-install_plugin "tailwind-v4-shadcn@claude-skills"
-install_plugin "shadcn-vue@claude-skills"
+echo "  Skills Marketplace (Frontend · ML · AI)"
+install_plugin "aceternity-ui@claude-skills"
+install_plugin "claude-agent-sdk@claude-skills"
+install_plugin "design-review@claude-skills"
+install_plugin "design-system-creation@claude-skills"
+install_plugin "frontend-design@claude-skills"
+install_plugin "inspira-ui@claude-skills"
+install_plugin "interaction-design@claude-skills"
+install_plugin "ml-model-training@claude-skills"
+install_plugin "ml-pipeline-automation@claude-skills"
+install_plugin "mobile-first-design@claude-skills"
+install_plugin "nextjs@claude-skills"
 install_plugin "react-best-practices@claude-skills"
 install_plugin "react-composition-patterns@claude-skills"
 install_plugin "react-hook-form-zod@claude-skills"
-install_plugin "nextjs@claude-skills"
-install_plugin "mobile-first-design@claude-skills"
 install_plugin "responsive-web-design@claude-skills"
-install_plugin "aceternity-ui@claude-skills"
-install_plugin "inspira-ui@claude-skills"
-install_plugin "design-review@claude-skills"
-install_plugin "design-system-creation@claude-skills"
-install_plugin "interaction-design@claude-skills"
-install_plugin "frontend-design@claude-skills"
-
-echo ""
-echo "  ML / AI Automation"
-install_plugin "ml-model-training@claude-skills"
-install_plugin "ml-pipeline-automation@claude-skills"
-install_plugin "claude-agent-sdk@claude-skills"
-
+install_plugin "shadcn-vue@claude-skills"
+install_plugin "tailwind-v4-shadcn@claude-skills"
 echo ""
 echo "  Python Core (ruff · mypy · pytest · SOLID)"
-install_plugin "python@python-backend-plugins"
 install_plugin "fastapi@python-backend-plugins"
+install_plugin "python@python-backend-plugins"
 install_plugin "tech-lead@python-backend-plugins"
-
 echo ""
 echo "  Python Dev Stack & Autonomous Workflows"
+install_plugin "agent-orchestration@ando-marketplace"
+install_plugin "backend-development@ando-marketplace"
+install_plugin "code-refactoring@ando-marketplace"
+install_plugin "code-review-ai@ando-marketplace"
+install_plugin "context-management@ando-marketplace"
+install_plugin "debugging-toolkit@ando-marketplace"
+install_plugin "dependency-management@ando-marketplace"
+install_plugin "engineering-workflow-tools@ando-marketplace"
+install_plugin "error-debugging@ando-marketplace"
+install_plugin "llm-application-dev@ando-marketplace"
+install_plugin "machine-learning-ops@ando-marketplace"
 install_plugin "python-development@ando-marketplace"
 install_plugin "tdd-workflows@ando-marketplace"
 install_plugin "unit-testing@ando-marketplace"
-install_plugin "backend-development@ando-marketplace"
-install_plugin "machine-learning-ops@ando-marketplace"
-install_plugin "llm-application-dev@ando-marketplace"
-install_plugin "agent-orchestration@ando-marketplace"
-install_plugin "context-management@ando-marketplace"
-install_plugin "engineering-workflow-tools@ando-marketplace"
-install_plugin "dependency-management@ando-marketplace"
-install_plugin "code-review-ai@ando-marketplace"
-install_plugin "code-refactoring@ando-marketplace"
-install_plugin "debugging-toolkit@ando-marketplace"
-install_plugin "error-debugging@ando-marketplace"
-
 echo ""
 echo "  Python Philosophy"
+install_plugin "arche@daviguides"
 install_plugin "shodo@daviguides"
 install_plugin "zazen@daviguides"
-install_plugin "arche@daviguides"
 
 # =============================================================================
 # 6. SETTINGS.JSON
@@ -896,87 +888,87 @@ cat > ~/.claude/settings.json << 'JSON'
     ]
   },
   "enabledPlugins": {
-    "commit-commands@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
+    "aceternity-ui@claude-skills": true,
+    "agent-orchestration@ando-marketplace": true,
     "agent-sdk-dev@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "playground@claude-plugins-official": true,
+    "arche@daviguides": true,
+    "autopilot@local": true,
+    "backend-development@ando-marketplace": true,
+    "claude-agent-sdk@claude-skills": true,
     "claude-code-setup@claude-plugins-official": true,
-    "plugin-dev@claude-plugins-official": true,
-    "ralph-loop@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "code-refactoring@ando-marketplace": true,
+    "code-review-ai@ando-marketplace": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "context-management@ando-marketplace": true,
     "context7@claude-plugins-official": true,
+    "debugging-toolkit@ando-marketplace": true,
+    "dependency-management@ando-marketplace": true,
+    "design-review@claude-skills": true,
+    "design-system-creation@claude-skills": true,
+    "engineering-workflow-tools@ando-marketplace": true,
+    "error-debugging@ando-marketplace": true,
+    "fastapi@python-backend-plugins": true,
+    "feature-dev@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "frontend-design@claude-skills": true,
+    "github@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "inspira-ui@claude-skills": true,
+    "interaction-design@claude-skills": true,
+    "llm-application-dev@ando-marketplace": true,
+    "machine-learning-ops@ando-marketplace": true,
+    "ml-model-training@claude-skills": true,
+    "ml-pipeline-automation@claude-skills": true,
+    "mobile-first-design@claude-skills": true,
+    "nextjs@claude-skills": true,
+    "orchestration@local": true,
+    "playground@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
-    "serena@claude-plugins-official": true,
-    "superpowers@superpowers-dev": true,
-    "tailwind-v4-shadcn@claude-skills": true,
-    "shadcn-vue@claude-skills": true,
+    "plugin-dev@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "python-development@ando-marketplace": true,
+    "python@python-backend-plugins": true,
+    "ralph-loop@claude-plugins-official": true,
     "react-best-practices@claude-skills": true,
     "react-composition-patterns@claude-skills": true,
     "react-hook-form-zod@claude-skills": true,
-    "nextjs@claude-skills": true,
-    "mobile-first-design@claude-skills": true,
     "responsive-web-design@claude-skills": true,
-    "aceternity-ui@claude-skills": true,
-    "inspira-ui@claude-skills": true,
-    "design-review@claude-skills": true,
-    "design-system-creation@claude-skills": true,
-    "interaction-design@claude-skills": true,
-    "frontend-design@claude-skills": true,
-    "ml-model-training@claude-skills": true,
-    "ml-pipeline-automation@claude-skills": true,
-    "claude-agent-sdk@claude-skills": true,
-    "python@python-backend-plugins": true,
-    "fastapi@python-backend-plugins": true,
-    "tech-lead@python-backend-plugins": true,
-    "python-development@ando-marketplace": true,
-    "tdd-workflows@ando-marketplace": true,
-    "unit-testing@ando-marketplace": true,
-    "backend-development@ando-marketplace": true,
-    "machine-learning-ops@ando-marketplace": true,
-    "llm-application-dev@ando-marketplace": true,
-    "agent-orchestration@ando-marketplace": true,
-    "context-management@ando-marketplace": true,
-    "engineering-workflow-tools@ando-marketplace": true,
-    "dependency-management@ando-marketplace": true,
-    "code-review-ai@ando-marketplace": true,
-    "code-refactoring@ando-marketplace": true,
-    "debugging-toolkit@ando-marketplace": true,
-    "error-debugging@ando-marketplace": true,
+    "security-guidance@claude-plugins-official": true,
+    "serena@claude-plugins-official": true,
+    "shadcn-vue@claude-skills": true,
     "shodo@daviguides": true,
-    "zazen@daviguides": true,
-    "arche@daviguides": true,
-    "autopilot@local": true,
-    "orchestration@local": true,
-    "workflow-orchestrator@local": true
+    "skill-creator@claude-plugins-official": true,
+    "superpowers@superpowers-dev": true,
+    "tailwind-v4-shadcn@claude-skills": true,
+    "tdd-workflows@ando-marketplace": true,
+    "tech-lead@python-backend-plugins": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "unit-testing@ando-marketplace": true,
+    "workflow-orchestrator@local": true,
+    "zazen@daviguides": true
   },
   "extraKnownMarketplaces": {
-    "superpowers-dev": {
-      "source": { "source": "github", "repo": "obra/superpowers" }
+    "ando-marketplace": {
+      "source": { "source": "github", "repo": "kivilaid/plugin-marketplace" }
     },
     "claude-skills": {
       "source": { "source": "github", "repo": "secondsky/claude-skills" }
     },
-    "ando-marketplace": {
-      "source": { "source": "github", "repo": "kivilaid/plugin-marketplace" }
+    "daviguides": {
+      "source": { "source": "github", "repo": "daviguides/claude-marketplace" }
     },
     "daymade-skills": {
       "source": { "source": "github", "repo": "daymade/claude-code-skills" }
     },
-    "daviguides": {
-      "source": { "source": "github", "repo": "daviguides/claude-marketplace" }
-    },
     "python-backend-plugins": {
       "source": { "source": "github", "repo": "ruslan-korneev/python-backend-claude-plugins" }
+    },
+    "superpowers-dev": {
+      "source": { "source": "github", "repo": "obra/superpowers" }
     }
   },
   "voiceEnabled": true,
@@ -995,7 +987,7 @@ echo -e "${BOLD}${GREEN}╔═════════════════�
 echo -e "${BOLD}${GREEN}║         Claude Code Setup Complete!                  ║${RESET}"
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
-echo -e "  Plugins      : 55+ marketplace + 3 local (autopilot, orchestration, workflow)"
+echo -e "  Plugins      : 59+ marketplace + 3 local (autopilot, orchestration, workflow)"
 echo -e "  Skills       : 3 custom (explain-code · debug-helper · test-writer)"
 echo -e "  Marketplaces : 6"
 echo -e "  MCP servers  : context7 · playwright · serena · github"
