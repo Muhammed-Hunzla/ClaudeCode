@@ -183,15 +183,25 @@ set -e
 
 cd "$SCRIPT_DIR"
 
-if [ $SYNC_EXIT -eq 42 ]; then
-  git add setup.sh sync-setup.sh 2>/dev/null
-  git commit -m "Auto-sync: update plugins/skills from settings.json" 2>/dev/null
-  git push origin main 2>/dev/null \
-    && echo "[sync-setup] Pushed to GitHub" \
-    || echo "[sync-setup] Push failed — will retry next sync"
-elif [ $SYNC_EXIT -eq 0 ]; then
+cd "$SCRIPT_DIR"
+
+if ! git diff --quiet setup.sh 2>/dev/null && ! git diff --quiet sync-setup.sh 2>/dev/null; then
+  # No actual file changes
   echo "[sync-setup] No changes to push"
-else
-  echo "[sync-setup] Sync failed"
-  exit 1
+  exit 0
 fi
+
+# Check for any unstaged changes in our files
+if git diff --quiet setup.sh sync-setup.sh 2>/dev/null; then
+  echo "[sync-setup] No changes to push"
+  exit 0
+fi
+
+git add setup.sh sync-setup.sh 2>/dev/null
+git commit -m "Auto-sync: update plugins/skills from settings.json" 2>/dev/null || {
+  echo "[sync-setup] Nothing new to commit"
+  exit 0
+}
+git push origin main 2>/dev/null \
+  && echo "[sync-setup] Pushed to GitHub" \
+  || echo "[sync-setup] Push failed — will retry next sync"
