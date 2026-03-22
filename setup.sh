@@ -16,7 +16,7 @@
 #   2.  Claude Code CLI
 #   3.  Custom personal skills (explain-code, debug-helper, test-writer)
 #   4.  6 plugin marketplaces
-#   5.  59+ plugins across all categories
+#   5.  123+ plugins across all categories
 #   6.  CLAUDE.md (user-level config router)
 #   7.  4 rule modules (rules/)
 #   8.  5 project templates (templates/)
@@ -831,7 +831,9 @@ add_marketplace() {
     && success "$label" || fail "$label"
 }
 
+add_marketplace "agiprolabs/claude-trading-skills"                     "agiprolabs-claude-trading-skills"
 add_marketplace "kivilaid/plugin-marketplace"                          "ando-marketplace"
+add_marketplace "jeremylongshore/claude-code-plugins-plus-skills"      "claude-code-plugins-plus"
 add_marketplace "secondsky/claude-skills"                              "claude-skills"
 add_marketplace "daviguides/claude-marketplace"                        "daviguides"
 add_marketplace "daymade/claude-code-skills"                           "daymade-skills"
@@ -1089,9 +1091,9 @@ echo -e "${BOLD}${GREEN}║         Claude Code Setup Complete!                 
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  OS           : ${BOLD}${OS}${RESET}"
-echo -e "  Plugins      : 59+ marketplace + 3 local (autopilot, orchestration, workflow)"
+echo -e "  Plugins      : 123+ marketplace + 3 local (autopilot, orchestration, workflow)"
 echo -e "  Skills       : 3 custom (explain-code · debug-helper · test-writer)"
-echo -e "  Marketplaces : 6"
+echo -e "  Marketplaces : 8"
 echo -e "  MCP servers  : context7 · playwright · serena · github"
 echo -e "  Rules        : 4 modules (project-standards · maintenance · workflow · code-quality)"
 echo -e "  Templates    : 5 (CLAUDE.md · PROJECT_SCOPE · CHANGELOG · DECISIONS · KNOWN_ISSUES)"
