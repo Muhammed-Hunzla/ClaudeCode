@@ -16,7 +16,7 @@
 #   2.  Claude Code CLI
 #   3.  Custom personal skills (explain-code, debug-helper, test-writer)
 #   4.  8 plugin marketplaces
-#   5.  198+ plugins across all categories
+#   5.  123+ plugins across all categories
 #   6.  CLAUDE.md (user-level config router)
 #   7.  4 rule modules (rules/)
 #   8.  5 project templates (templates/)
@@ -1484,7 +1484,7 @@ echo -e "${BOLD}${GREEN}║         Claude Code Setup Complete!                 
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  OS           : ${BOLD}${OS}${RESET}"
-echo -e "  Plugins      : 198+ marketplace + 3 local (autopilot, orchestration, workflow)"
+echo -e "  Plugins      : 123+ marketplace + 3 local (autopilot, orchestration, workflow)"
 echo -e "  Skills       : 3 custom (explain-code · debug-helper · test-writer)"
 echo -e "  Marketplaces : 8"
 echo -e "  MCP servers  : 40+ (CRM · sales · outreach · automation · scraping · ads · payments)"
