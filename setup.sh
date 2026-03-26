@@ -15,8 +15,8 @@
 #   1.  System dependencies (Homebrew/winget, Node.js, uv, TypeScript LSP)
 #   2.  Claude Code CLI
 #   3.  Custom personal skills (explain-code, debug-helper, test-writer)
-#   4.  6 plugin marketplaces
-#   5.  123+ plugins across all categories
+#   4.  8 plugin marketplaces
+#   5.  198+ plugins across all categories
 #   6.  CLAUDE.md (user-level config router)
 #   7.  4 rule modules (rules/)
 #   8.  5 project templates (templates/)
@@ -26,7 +26,8 @@
 #   12. 2 third-party orchestration plugins (cloned from GitHub)
 #   13. Model router (auto Haiku/Sonnet/Opus routing)
 #   14. CodexBar (menu bar usage monitor — macOS only)
-#   15. settings.json (hooks, permissions, plugins, MCP config)
+#   15. 40+ MCP servers (.mcp.json — CRM, sales, outreach, automation)
+#   16. settings.json (hooks, permissions, plugins, MCP config)
 # =============================================================================
 
 set -e
@@ -73,7 +74,7 @@ echo -e "${BOLD}Detected OS: ${GREEN}${OS}${RESET}"
 # =============================================================================
 # 1. SYSTEM DEPENDENCIES
 # =============================================================================
-step "1/15  System Dependencies"
+step "1/16  System Dependencies"
 
 if [ "$OS" = "mac" ]; then
   # Homebrew (macOS)
@@ -151,7 +152,7 @@ fi
 # =============================================================================
 # 2. CLAUDE CODE CLI
 # =============================================================================
-step "2/15  Claude Code CLI"
+step "2/16  Claude Code CLI"
 
 if ! command -v claude &>/dev/null; then
   log "Installing Claude Code..."
@@ -170,7 +171,7 @@ mkdir -p ~/.claude/memory
 # =============================================================================
 # 3. CUSTOM PERSONAL SKILLS
 # =============================================================================
-step "3/15  Custom Personal Skills"
+step "3/16  Custom Personal Skills"
 
 cat > ~/.claude/skills/explain-code/SKILL.md << 'SKILL'
 ---
@@ -241,7 +242,7 @@ success "test-writer"
 # =============================================================================
 # 4. CLAUDE.MD (user-level config router)
 # =============================================================================
-step "4/15  CLAUDE.md"
+step "4/16  CLAUDE.md"
 
 cat > "$CLAUDE_DIR/CLAUDE.md" << 'EOF'
 # Claude Code — User-Level Configuration Router
@@ -280,7 +281,7 @@ success "CLAUDE.md"
 # =============================================================================
 # 5. RULES
 # =============================================================================
-step "5/15  Rules"
+step "5/16  Rules"
 
 mkdir -p "$CLAUDE_DIR/rules"
 
@@ -390,7 +391,7 @@ success "code-quality.md"
 # =============================================================================
 # 6. TEMPLATES
 # =============================================================================
-step "6/15  Templates"
+step "6/16  Templates"
 
 mkdir -p "$CLAUDE_DIR/templates"
 
@@ -464,7 +465,7 @@ success "KNOWN_ISSUES.md template"
 # =============================================================================
 # 7. COMMANDS
 # =============================================================================
-step "7/15  Commands"
+step "7/16  Commands"
 
 mkdir -p "$CLAUDE_DIR/commands"
 
@@ -481,7 +482,7 @@ success "/release"
 # =============================================================================
 # 8. MEMORY
 # =============================================================================
-step "8/15  Memory"
+step "8/16  Memory"
 
 mkdir -p "$CLAUDE_DIR/memory"
 
@@ -519,7 +520,7 @@ success "feedback_autopilot_workflow.md"
 # =============================================================================
 # 9. AUTOPILOT PLUGIN
 # =============================================================================
-step "9/15  Autopilot Plugin"
+step "9/16  Autopilot Plugin"
 
 AUTOPILOT="$LOCAL_PLUGINS/autopilot"
 mkdir -p "$AUTOPILOT/.claude-plugin" "$AUTOPILOT/agents" "$AUTOPILOT/commands" "$AUTOPILOT/skills/autopilot-workflow"
@@ -641,7 +642,7 @@ success "autopilot-workflow skill"
 # =============================================================================
 # 10. THIRD-PARTY ORCHESTRATION PLUGINS
 # =============================================================================
-step "10/15  Orchestration Plugins"
+step "10/16  Orchestration Plugins"
 
 if [ ! -d "$LOCAL_PLUGINS/claude-orchestration/.git" ]; then
   log "Cloning mbruhler/claude-orchestration..."
@@ -666,7 +667,7 @@ fi
 # =============================================================================
 # 11. MODEL ROUTER
 # =============================================================================
-step "11/15  Model Router"
+step "11/16  Model Router"
 
 mkdir -p "$ROUTER_DIR"
 
@@ -798,7 +799,7 @@ fi
 # =============================================================================
 # 12. CODEXBAR (macOS only)
 # =============================================================================
-step "12/15  CodexBar"
+step "12/16  CodexBar"
 
 if [ "$OS" = "mac" ]; then
   if command -v brew &>/dev/null; then
@@ -821,7 +822,7 @@ fi
 # =============================================================================
 # 13. PLUGIN MARKETPLACES
 # =============================================================================
-step "13/15  Plugin Marketplaces"
+step "13/16  Plugin Marketplaces"
 
 add_marketplace() {
   local repo="$1"
@@ -845,9 +846,9 @@ log "Waiting for marketplaces to sync..."
 sleep 5
 
 # =============================================================================
-# 14. PLUGINS (59 total)
+# 14. PLUGINS (198+ total)
 # =============================================================================
-step "14/15  Installing Plugins"
+step "14/16  Installing Plugins"
 
 install_plugin() {
   local plugin="$1"
@@ -893,6 +894,9 @@ install_plugin "security-guidance@claude-plugins-official"
 install_plugin "serena@claude-plugins-official"
 install_plugin "skill-creator@claude-plugins-official"
 install_plugin "typescript-lsp@claude-plugins-official"
+install_plugin "swift-lsp@claude-plugins-official"
+install_plugin "kotlin-lsp@claude-plugins-official"
+install_plugin "gopls-lsp@claude-plugins-official"
 echo ""
 echo "  Superpowers (TDD · Debugging · Agent Patterns)"
 install_plugin "superpowers@superpowers-dev"
@@ -941,11 +945,334 @@ echo "  Python Philosophy"
 install_plugin "arche@daviguides"
 install_plugin "shodo@daviguides"
 install_plugin "zazen@daviguides"
+echo ""
+echo "  Trading & Crypto"
+install_plugin "trading-skills@agiprolabs-claude-trading-skills"
+install_plugin "arbitrage-opportunity-finder@claude-code-plugins-plus"
+install_plugin "blockchain-explorer-cli@claude-code-plugins-plus"
+install_plugin "cross-chain-bridge-monitor@claude-code-plugins-plus"
+install_plugin "crypto-derivatives-tracker@claude-code-plugins-plus"
+install_plugin "crypto-news-aggregator@claude-code-plugins-plus"
+install_plugin "crypto-portfolio-tracker@claude-code-plugins-plus"
+install_plugin "crypto-signal-generator@claude-code-plugins-plus"
+install_plugin "crypto-tax-calculator@claude-code-plugins-plus"
+install_plugin "defi-yield-optimizer@claude-code-plugins-plus"
+install_plugin "dex-aggregator-router@claude-code-plugins-plus"
+install_plugin "flash-loan-simulator@claude-code-plugins-plus"
+install_plugin "gas-fee-optimizer@claude-code-plugins-plus"
+install_plugin "liquidity-pool-analyzer@claude-code-plugins-plus"
+install_plugin "market-movers-scanner@claude-code-plugins-plus"
+install_plugin "market-price-tracker@claude-code-plugins-plus"
+install_plugin "market-sentiment-analyzer@claude-code-plugins-plus"
+install_plugin "mempool-analyzer@claude-code-plugins-plus"
+install_plugin "nft-rarity-analyzer@claude-code-plugins-plus"
+install_plugin "on-chain-analytics@claude-code-plugins-plus"
+install_plugin "options-flow-analyzer@claude-code-plugins-plus"
+install_plugin "staking-rewards-optimizer@claude-code-plugins-plus"
+install_plugin "token-launch-tracker@claude-code-plugins-plus"
+install_plugin "trading-strategy-backtester@claude-code-plugins-plus"
+install_plugin "wallet-portfolio-tracker@claude-code-plugins-plus"
+install_plugin "wallet-security-auditor@claude-code-plugins-plus"
+install_plugin "whale-alert-monitor@claude-code-plugins-plus"
+install_plugin "openbb-terminal@claude-code-plugins-plus"
+echo ""
+echo "  Design & UX"
+install_plugin "wondelai-design-everyday-things@claude-code-plugins-plus"
+install_plugin "wondelai-hooked-ux@claude-code-plugins-plus"
+install_plugin "wondelai-ios-hig-design@claude-code-plugins-plus"
+install_plugin "wondelai-refactoring-ui@claude-code-plugins-plus"
+install_plugin "wondelai-top-design@claude-code-plugins-plus"
+install_plugin "wondelai-ux-heuristics@claude-code-plugins-plus"
+install_plugin "wondelai-web-typography@claude-code-plugins-plus"
+echo ""
+echo "  AI/ML & Data Science"
+install_plugin "anomaly-detection-system@claude-code-plugins-plus"
+install_plugin "time-series-forecaster@claude-code-plugins-plus"
+install_plugin "sentiment-analysis-tool@claude-code-plugins-plus"
+install_plugin "data-visualization-creator@claude-code-plugins-plus"
+install_plugin "nlp-text-analyzer@claude-code-plugins-plus"
+install_plugin "regression-analysis-tool@claude-code-plugins-plus"
+echo ""
+echo "  API & Backend"
+install_plugin "rest-api-generator@claude-code-plugins-plus"
+install_plugin "graphql-server-builder@claude-code-plugins-plus"
+install_plugin "websocket-server-builder@claude-code-plugins-plus"
+install_plugin "api-authentication-builder@claude-code-plugins-plus"
+install_plugin "api-documentation-generator@claude-code-plugins-plus"
+install_plugin "api-sdk-generator@claude-code-plugins-plus"
+echo ""
+echo "  Testing & Performance"
+install_plugin "e2e-test-framework@claude-code-plugins-plus"
+install_plugin "mobile-app-tester@claude-code-plugins-plus"
+install_plugin "unit-test-generator@claude-code-plugins-plus"
+install_plugin "api-test-automation@claude-code-plugins-plus"
+install_plugin "test-coverage-analyzer@claude-code-plugins-plus"
+install_plugin "bottleneck-detector@claude-code-plugins-plus"
+install_plugin "database-query-profiler@claude-code-plugins-plus"
+install_plugin "performance-optimization-advisor@claude-code-plugins-plus"
+install_plugin "memory-leak-detector@claude-code-plugins-plus"
+echo ""
+echo "  Daymade Skills"
+install_plugin "deep-research@daymade-skills"
+install_plugin "financial-data-collector@daymade-skills"
+install_plugin "iOS-APP-developer@daymade-skills"
+install_plugin "ui-designer@daymade-skills"
+install_plugin "competitors-analysis@daymade-skills"
 
 # =============================================================================
-# 15. SETTINGS.JSON
+# 15. MCP SERVERS (.mcp.json — 40+ servers)
 # =============================================================================
-step "15/15  Writing ~/.claude/settings.json"
+step "15/16  MCP Servers (.mcp.json)"
+
+log "Writing ~/.claude/.mcp.json with 40+ MCP servers..."
+
+cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
+{
+  "mcpServers": {
+
+    "apollo-io": {
+      "command": "npx",
+      "args": ["-y", "@chainscore/apollo-io-mcp"],
+      "env": { "APOLLO_API_KEY": "YOUR_APOLLO_API_KEY_HERE" }
+    },
+
+    "hunter-io": {
+      "command": "npx",
+      "args": ["-y", "hunter-mcp"],
+      "env": { "HUNTER_API_KEY": "YOUR_HUNTER_API_KEY_HERE" }
+    },
+
+    "lusha": {
+      "command": "npx",
+      "args": ["-y", "@lusha-oss/lusha-public-api-mcp"],
+      "env": { "LUSHA_API_KEY": "YOUR_LUSHA_API_KEY_HERE" }
+    },
+
+    "explorium-prospecting": {
+      "command": "npx",
+      "args": ["-y", "@explorium/vibeprospecting-mcp"],
+      "env": { "EXPLORIUM_API_KEY": "YOUR_EXPLORIUM_API_KEY_HERE" }
+    },
+
+    "smartlead": {
+      "command": "npx",
+      "args": ["-y", "@leadmagic/smartlead-mcp-server"],
+      "env": { "SMARTLEAD_API_KEY": "YOUR_SMARTLEAD_API_KEY_HERE" }
+    },
+
+    "cold-mailer": {
+      "command": "npx",
+      "args": ["-y", "cold-mailer-mcp"],
+      "env": { "EMAIL_USER": "YOUR_EMAIL_HERE", "EMAIL_PASS": "YOUR_EMAIL_APP_PASSWORD_HERE" }
+    },
+
+    "linkedin-scraper": {
+      "command": "npx",
+      "args": ["-y", "linkedin-mcp-server"],
+      "env": { "LINKEDIN_EMAIL": "YOUR_LINKEDIN_EMAIL_HERE", "LINKEDIN_PASSWORD": "YOUR_LINKEDIN_PASSWORD_HERE" }
+    },
+
+    "linkedin-content": {
+      "command": "npx",
+      "args": ["-y", "@southleft/linkedin-mcp"],
+      "env": { "LINKEDIN_ACCESS_TOKEN": "YOUR_LINKEDIN_ACCESS_TOKEN_HERE" }
+    },
+
+    "google-maps-scraper": {
+      "command": "npx",
+      "args": ["-y", "google-maps-scraper-mcp"],
+      "env": {}
+    },
+
+    "outscraper": {
+      "command": "npx",
+      "args": ["-y", "outscraper-mcp"],
+      "env": { "OUTSCRAPER_API_KEY": "YOUR_OUTSCRAPER_API_KEY_HERE" }
+    },
+
+    "brightdata": {
+      "command": "npx",
+      "args": ["-y", "@brightdata/mcp"],
+      "env": { "API_TOKEN": "YOUR_BRIGHTDATA_API_TOKEN_HERE", "BROWSER_AUTH": "YOUR_BRIGHTDATA_BROWSER_AUTH_HERE" }
+    },
+
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY_HERE" }
+    },
+
+    "apify": {
+      "command": "npx",
+      "args": ["-y", "@apify/mcp-server-rag-web-browser"],
+      "env": { "APIFY_TOKEN": "YOUR_APIFY_TOKEN_HERE" }
+    },
+
+    "twitter-x": {
+      "command": "npx",
+      "args": ["-y", "x-mcp"],
+      "env": { "X_USERNAME": "YOUR_X_USERNAME_HERE", "X_PASSWORD": "YOUR_X_PASSWORD_HERE" }
+    },
+
+    "whatsapp": {
+      "command": "npx",
+      "args": ["-y", "whatsapp-mcp"],
+      "env": {}
+    },
+
+    "telegram": {
+      "command": "npx",
+      "args": ["-y", "telegram-mcp"],
+      "env": { "TELEGRAM_API_ID": "YOUR_TELEGRAM_API_ID_HERE", "TELEGRAM_API_HASH": "YOUR_TELEGRAM_API_HASH_HERE" }
+    },
+
+    "discord": {
+      "command": "npx",
+      "args": ["-y", "discord-mcp"],
+      "env": { "DISCORD_TOKEN": "YOUR_DISCORD_BOT_TOKEN_HERE" }
+    },
+
+    "reddit-leads": {
+      "command": "npx",
+      "args": ["-y", "reddit-mcp-server"],
+      "env": {}
+    },
+
+    "upwork": {
+      "command": "npx",
+      "args": ["-y", "@chinchillaenterprises/mcp-upwork"],
+      "env": { "UPWORK_API_KEY": "YOUR_UPWORK_API_KEY_HERE", "UPWORK_API_SECRET": "YOUR_UPWORK_API_SECRET_HERE" }
+    },
+
+    "gohighlevel-complete": {
+      "command": "npx",
+      "args": ["-y", "gohighlevel-mcp-complete"],
+      "env": { "GHL_API_KEY": "YOUR_GHL_API_KEY_HERE", "GHL_LOCATION_ID": "YOUR_GHL_LOCATION_ID_HERE" }
+    },
+
+    "gohighlevel": {
+      "command": "npx",
+      "args": ["-y", "gohighlevel-mcp"],
+      "env": { "GHL_API_KEY": "YOUR_GHL_API_KEY_HERE" }
+    },
+
+    "salesforce-cli": {
+      "command": "npx",
+      "args": ["-y", "@salesforce/mcp"],
+      "env": {}
+    },
+
+    "salesforce-api": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-salesforce"],
+      "env": { "SF_LOGIN_URL": "https://login.salesforce.com", "SF_USERNAME": "YOUR_SF_USERNAME_HERE", "SF_PASSWORD": "YOUR_SF_PASSWORD_HERE", "SF_SECURITY_TOKEN": "YOUR_SF_SECURITY_TOKEN_HERE" }
+    },
+
+    "hubspot": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-hubspot"],
+      "env": { "HUBSPOT_ACCESS_TOKEN": "YOUR_HUBSPOT_ACCESS_TOKEN_HERE" }
+    },
+
+    "pipedrive": {
+      "command": "npx",
+      "args": ["-y", "mcp-pipedrive"],
+      "env": { "PIPEDRIVE_API_TOKEN": "YOUR_PIPEDRIVE_API_TOKEN_HERE" }
+    },
+
+    "zoho-crm": {
+      "command": "npx",
+      "args": ["-y", "zoho-crm-mcp"],
+      "env": { "ZOHO_CLIENT_ID": "YOUR_ZOHO_CLIENT_ID_HERE", "ZOHO_CLIENT_SECRET": "YOUR_ZOHO_CLIENT_SECRET_HERE", "ZOHO_REFRESH_TOKEN": "YOUR_ZOHO_REFRESH_TOKEN_HERE" }
+    },
+
+    "zapier": {
+      "command": "npx",
+      "args": ["-y", "zapier-mcp"],
+      "env": { "ZAPIER_MCP_API_KEY": "YOUR_ZAPIER_MCP_API_KEY_HERE" }
+    },
+
+    "n8n-workflow-builder": {
+      "command": "npx",
+      "args": ["-y", "mcp-n8n-workflow-builder"],
+      "env": { "N8N_BASE_URL": "YOUR_N8N_URL_HERE", "N8N_API_KEY": "YOUR_N8N_API_KEY_HERE" }
+    },
+
+    "n8n": {
+      "command": "npx",
+      "args": ["-y", "n8n-mcp-server"],
+      "env": { "N8N_BASE_URL": "YOUR_N8N_URL_HERE", "N8N_API_KEY": "YOUR_N8N_API_KEY_HERE" }
+    },
+
+    "make-com": {
+      "command": "npx",
+      "args": ["-y", "@integromat/make-mcp-server"],
+      "env": { "MAKE_API_TOKEN": "YOUR_MAKE_API_TOKEN_HERE" }
+    },
+
+    "google-ads": {
+      "command": "npx",
+      "args": ["-y", "@googleads/google-ads-mcp"],
+      "env": { "GOOGLE_ADS_DEVELOPER_TOKEN": "YOUR_GOOGLE_ADS_DEV_TOKEN_HERE", "GOOGLE_ADS_CLIENT_ID": "YOUR_GOOGLE_ADS_CLIENT_ID_HERE", "GOOGLE_ADS_CLIENT_SECRET": "YOUR_GOOGLE_ADS_CLIENT_SECRET_HERE", "GOOGLE_ADS_REFRESH_TOKEN": "YOUR_GOOGLE_ADS_REFRESH_TOKEN_HERE", "GOOGLE_ADS_CUSTOMER_ID": "YOUR_GOOGLE_ADS_CUSTOMER_ID_HERE" }
+    },
+
+    "meta-ads": {
+      "command": "npx",
+      "args": ["-y", "@pipeboard/meta-ads-mcp"],
+      "env": { "META_ACCESS_TOKEN": "YOUR_META_ACCESS_TOKEN_HERE", "META_AD_ACCOUNT_ID": "YOUR_META_AD_ACCOUNT_ID_HERE" }
+    },
+
+    "mailchimp": {
+      "command": "npx",
+      "args": ["-y", "mailchimp-mcp-server"],
+      "env": { "MAILCHIMP_API_KEY": "YOUR_MAILCHIMP_API_KEY_HERE" }
+    },
+
+    "sendgrid": {
+      "command": "npx",
+      "args": ["-y", "sendgrid-mcp"],
+      "env": { "SENDGRID_API_KEY": "YOUR_SENDGRID_API_KEY_HERE" }
+    },
+
+    "twilio": {
+      "command": "npx",
+      "args": ["-y", "@twilio-labs/mcp"],
+      "env": { "TWILIO_ACCOUNT_SID": "YOUR_TWILIO_ACCOUNT_SID_HERE", "TWILIO_AUTH_TOKEN": "YOUR_TWILIO_AUTH_TOKEN_HERE" }
+    },
+
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": { "SLACK_BOT_TOKEN": "YOUR_SLACK_BOT_TOKEN_HERE" }
+    },
+
+    "email-unified": {
+      "command": "npx",
+      "args": ["-y", "email-mcp"],
+      "env": { "EMAIL_PROVIDER": "gmail", "EMAIL_ADDRESS": "YOUR_EMAIL_HERE", "EMAIL_PASSWORD": "YOUR_EMAIL_APP_PASSWORD_HERE" }
+    },
+
+    "stripe": {
+      "command": "npx",
+      "args": ["-y", "@stripe/mcp"],
+      "env": { "STRIPE_SECRET_KEY": "YOUR_STRIPE_SECRET_KEY_HERE" }
+    },
+
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@makenotion/notion-mcp-server"],
+      "env": { "NOTION_API_KEY": "YOUR_NOTION_API_KEY_HERE" }
+    }
+  }
+}
+MCPEOF
+
+success "~/.claude/.mcp.json written (40+ MCP servers)"
+
+# =============================================================================
+# 16. SETTINGS.JSON
+# =============================================================================
+step "16/16  Writing ~/.claude/settings.json"
 
 # Write settings.json using a Python one-liner to guarantee valid JSON
 # This avoids heredoc escaping issues with double quotes in notification commands
@@ -1021,6 +1348,9 @@ settings = {
     'context7@claude-plugins-official': True,
     'playwright@claude-plugins-official': True,
     'serena@claude-plugins-official': True,
+    'swift-lsp@claude-plugins-official': True,
+    'kotlin-lsp@claude-plugins-official': True,
+    'gopls-lsp@claude-plugins-official': True,
     'superpowers@superpowers-dev': True,
     'react-best-practices@claude-skills': True,
     'tailwind-v4-shadcn@claude-skills': True,
@@ -1036,7 +1366,12 @@ settings = {
     'inspira-ui@claude-skills': True,
     'interaction-design@claude-skills': True,
     'frontend-design@claude-skills': True,
+    'ml-model-training@claude-skills': True,
+    'ml-pipeline-automation@claude-skills': True,
+    'claude-agent-sdk@claude-skills': True,
     'tech-lead@python-backend-plugins': True,
+    'python@python-backend-plugins': True,
+    'fastapi@python-backend-plugins': True,
     'python-development@ando-marketplace': True,
     'unit-testing@ando-marketplace': True,
     'agent-orchestration@ando-marketplace': True,
@@ -1045,9 +1380,6 @@ settings = {
     'debugging-toolkit@ando-marketplace': True,
     'backend-development@ando-marketplace': True,
     'code-refactoring@ando-marketplace': True,
-    'ml-model-training@claude-skills': True,
-    'python@python-backend-plugins': True,
-    'fastapi@python-backend-plugins': True,
     'tdd-workflows@ando-marketplace': True,
     'machine-learning-ops@ando-marketplace': True,
     'context-management@ando-marketplace': True,
@@ -1057,8 +1389,67 @@ settings = {
     'shodo@daviguides': True,
     'zazen@daviguides': True,
     'arche@daviguides': True,
-    'ml-pipeline-automation@claude-skills': True,
-    'claude-agent-sdk@claude-skills': True,
+    'trading-skills@agiprolabs-claude-trading-skills': True,
+    'arbitrage-opportunity-finder@claude-code-plugins-plus': True,
+    'blockchain-explorer-cli@claude-code-plugins-plus': True,
+    'cross-chain-bridge-monitor@claude-code-plugins-plus': True,
+    'crypto-derivatives-tracker@claude-code-plugins-plus': True,
+    'crypto-news-aggregator@claude-code-plugins-plus': True,
+    'crypto-portfolio-tracker@claude-code-plugins-plus': True,
+    'crypto-signal-generator@claude-code-plugins-plus': True,
+    'crypto-tax-calculator@claude-code-plugins-plus': True,
+    'defi-yield-optimizer@claude-code-plugins-plus': True,
+    'dex-aggregator-router@claude-code-plugins-plus': True,
+    'flash-loan-simulator@claude-code-plugins-plus': True,
+    'gas-fee-optimizer@claude-code-plugins-plus': True,
+    'liquidity-pool-analyzer@claude-code-plugins-plus': True,
+    'market-movers-scanner@claude-code-plugins-plus': True,
+    'market-price-tracker@claude-code-plugins-plus': True,
+    'market-sentiment-analyzer@claude-code-plugins-plus': True,
+    'mempool-analyzer@claude-code-plugins-plus': True,
+    'nft-rarity-analyzer@claude-code-plugins-plus': True,
+    'on-chain-analytics@claude-code-plugins-plus': True,
+    'options-flow-analyzer@claude-code-plugins-plus': True,
+    'staking-rewards-optimizer@claude-code-plugins-plus': True,
+    'token-launch-tracker@claude-code-plugins-plus': True,
+    'trading-strategy-backtester@claude-code-plugins-plus': True,
+    'wallet-portfolio-tracker@claude-code-plugins-plus': True,
+    'wallet-security-auditor@claude-code-plugins-plus': True,
+    'whale-alert-monitor@claude-code-plugins-plus': True,
+    'openbb-terminal@claude-code-plugins-plus': True,
+    'wondelai-design-everyday-things@claude-code-plugins-plus': True,
+    'wondelai-hooked-ux@claude-code-plugins-plus': True,
+    'wondelai-ios-hig-design@claude-code-plugins-plus': True,
+    'wondelai-refactoring-ui@claude-code-plugins-plus': True,
+    'wondelai-top-design@claude-code-plugins-plus': True,
+    'wondelai-ux-heuristics@claude-code-plugins-plus': True,
+    'wondelai-web-typography@claude-code-plugins-plus': True,
+    'anomaly-detection-system@claude-code-plugins-plus': True,
+    'time-series-forecaster@claude-code-plugins-plus': True,
+    'sentiment-analysis-tool@claude-code-plugins-plus': True,
+    'data-visualization-creator@claude-code-plugins-plus': True,
+    'nlp-text-analyzer@claude-code-plugins-plus': True,
+    'regression-analysis-tool@claude-code-plugins-plus': True,
+    'rest-api-generator@claude-code-plugins-plus': True,
+    'graphql-server-builder@claude-code-plugins-plus': True,
+    'websocket-server-builder@claude-code-plugins-plus': True,
+    'api-authentication-builder@claude-code-plugins-plus': True,
+    'api-documentation-generator@claude-code-plugins-plus': True,
+    'api-sdk-generator@claude-code-plugins-plus': True,
+    'e2e-test-framework@claude-code-plugins-plus': True,
+    'mobile-app-tester@claude-code-plugins-plus': True,
+    'unit-test-generator@claude-code-plugins-plus': True,
+    'api-test-automation@claude-code-plugins-plus': True,
+    'test-coverage-analyzer@claude-code-plugins-plus': True,
+    'bottleneck-detector@claude-code-plugins-plus': True,
+    'database-query-profiler@claude-code-plugins-plus': True,
+    'performance-optimization-advisor@claude-code-plugins-plus': True,
+    'memory-leak-detector@claude-code-plugins-plus': True,
+    'deep-research@daymade-skills': True,
+    'financial-data-collector@daymade-skills': True,
+    'iOS-APP-developer@daymade-skills': True,
+    'ui-designer@daymade-skills': True,
+    'competitors-analysis@daymade-skills': True,
     'autopilot@local': True,
     'orchestration@local': True,
     'workflow-orchestrator@local': True
@@ -1069,7 +1460,9 @@ settings = {
     'ando-marketplace': {'source': {'source': 'github', 'repo': 'kivilaid/plugin-marketplace'}},
     'daymade-skills': {'source': {'source': 'github', 'repo': 'daymade/claude-code-skills'}},
     'daviguides': {'source': {'source': 'github', 'repo': 'daviguides/claude-marketplace'}},
-    'python-backend-plugins': {'source': {'source': 'github', 'repo': 'ruslan-korneev/python-backend-claude-plugins'}}
+    'python-backend-plugins': {'source': {'source': 'github', 'repo': 'ruslan-korneev/python-backend-claude-plugins'}},
+    'agiprolabs-claude-trading-skills': {'source': {'source': 'github', 'repo': 'agiprolabs/claude-trading-skills'}},
+    'claude-code-plugins-plus': {'source': {'source': 'github', 'repo': 'jeremylongshore/claude-code-plugins-plus-skills'}}
   },
   'voiceEnabled': True,
   'skipDangerousModePermissionPrompt': True
@@ -1091,10 +1484,10 @@ echo -e "${BOLD}${GREEN}║         Claude Code Setup Complete!                 
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  OS           : ${BOLD}${OS}${RESET}"
-echo -e "  Plugins      : 123+ marketplace + 3 local (autopilot, orchestration, workflow)"
+echo -e "  Plugins      : 198+ marketplace + 3 local (autopilot, orchestration, workflow)"
 echo -e "  Skills       : 3 custom (explain-code · debug-helper · test-writer)"
 echo -e "  Marketplaces : 8"
-echo -e "  MCP servers  : context7 · playwright · serena · github"
+echo -e "  MCP servers  : 40+ (CRM · sales · outreach · automation · scraping · ads · payments)"
 echo -e "  Rules        : 4 modules (project-standards · maintenance · workflow · code-quality)"
 echo -e "  Templates    : 5 (CLAUDE.md · PROJECT_SCOPE · CHANGELOG · DECISIONS · KNOWN_ISSUES)"
 echo -e "  Commands     : /bootstrap · /release · /autopilot · /quick-autopilot"
