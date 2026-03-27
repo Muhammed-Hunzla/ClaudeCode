@@ -1,201 +1,212 @@
 #!/usr/bin/env bash
 # =============================================================================
-# sync-setup.sh — Auto-sync setup.sh with current ~/.claude/settings.json
+# sync-setup.sh — Auto-sync setup.sh with ALL current ~/.claude/ config
 #
-# Reads the live settings.json, regenerates plugin sections in setup.sh,
-# then commits and pushes to GitHub if there are changes.
+# Syncs: rules, CLAUDE.md, templates, commands, skills, MCP servers,
+#        plugins, settings.json
+#
+# Runs automatically via SessionEnd hook. Can also be run manually.
 # =============================================================================
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export SCRIPT_DIR
 SETUP_FILE="$SCRIPT_DIR/setup.sh"
-SETTINGS="$HOME/.claude/settings.json"
+CLAUDE_DIR="$HOME/.claude"
+SETTINGS="$CLAUDE_DIR/settings.json"
 
-if [ ! -f "$SETTINGS" ] || [ ! -f "$SETUP_FILE" ]; then
-  echo "[sync-setup] Missing settings.json or setup.sh — skipping"
+if [ ! -f "$SETUP_FILE" ]; then
+  echo "[sync-setup] setup.sh not found — skipping"
   exit 0
 fi
 
 # ---------------------------------------------------------------------------
-# Run the full sync via Python (single script, no temp files)
+# Full sync via Python — handles rules, CLAUDE.md, templates, commands,
+# skills, MCP, settings.json, and plugins in one pass
 # ---------------------------------------------------------------------------
 
-set +e  # Python uses exit 42 for "changes made"
 python3 << 'PYEOF'
-import json, re, os, sys
+import json, re, os, sys, glob
 
-SETTINGS = os.path.expanduser("~/.claude/settings.json")
-SETUP_FILE = os.path.join(os.environ.get("SCRIPT_DIR", "."), "setup.sh")
-
-with open(SETTINGS) as f:
-    settings = json.load(f)
+SCRIPT_DIR = os.environ["SCRIPT_DIR"]
+SETUP_FILE = os.path.join(SCRIPT_DIR, "setup.sh")
+CLAUDE_DIR = os.path.expanduser("~/.claude")
+SETTINGS_FILE = os.path.join(CLAUDE_DIR, "settings.json")
 
 with open(SETUP_FILE) as f:
     content = f.read()
 
-plugins = {k: v for k, v in settings.get("enabledPlugins", {}).items() if v}
-marketplaces = settings.get("extraKnownMarketplaces", {})
+original = content
+changes = []
 
-# --- 1. Group plugins by marketplace ---
-groups = {}
-for pid in sorted(plugins.keys()):
-    parts = pid.rsplit("@", 1)
-    name = parts[0]
-    mkt = parts[1] if len(parts) == 2 else "unknown"
-    groups.setdefault(mkt, []).append(pid)
+# =========================================================================
+# Helper: replace heredoc content between cat line and delimiter
+# =========================================================================
 
-mkt_labels = {
-    "claude-plugins-official": "Official Anthropic",
-    "superpowers-dev": "Superpowers (TDD · Debugging · Agent Patterns)",
-    "claude-skills": "Skills Marketplace (Frontend · ML · AI)",
-    "python-backend-plugins": "Python Core (ruff · mypy · pytest · SOLID)",
-    "ando-marketplace": "Python Dev Stack & Autonomous Workflows",
-    "daviguides": "Python Philosophy",
-    "daymade-skills": "Daymade Skills",
-    "local": "Local Plugins",
+def replace_heredoc(content, cat_pattern, delimiter, new_body):
+    """Replace the body of a heredoc block in setup.sh."""
+    delim_esc = re.escape(delimiter)
+    # Match: cat line + newline + body + newline + delimiter
+    pattern = rf'({cat_pattern}[^\n]*\n)(.*?)(\n{delim_esc}(?:\n|$))'
+    m = re.search(pattern, content, re.DOTALL)
+    if not m:
+        return content, False
+    old_body = m.group(2)
+    if old_body.strip() == new_body.strip():
+        return content, False
+    return content[:m.start(2)] + new_body + content[m.end(2):m.start(3)] + m.group(3) + content[m.end(3):], True
+
+def sync_file(content, source_path, cat_pattern, delimiter):
+    """Read a source file and sync its content into the heredoc."""
+    if not os.path.isfile(source_path):
+        return content
+    with open(source_path) as f:
+        body = f.read().rstrip('\n')
+    new_content, changed = replace_heredoc(content, cat_pattern, delimiter, body)
+    if changed:
+        changes.append(os.path.basename(source_path))
+    return new_content
+
+# =========================================================================
+# 1. SYNC RULES
+# =========================================================================
+
+print("[sync-setup] Checking rules...")
+rules = {
+    "project-standards.md": r'cat > "\$CLAUDE_DIR/rules/project-standards\.md" << \'EOF\'',
+    "maintenance.md":       r'cat > "\$CLAUDE_DIR/rules/maintenance\.md" << \'EOF\'',
+    "workflow.md":          r'cat > "\$CLAUDE_DIR/rules/workflow\.md" << \'EOF\'',
+    "code-quality.md":      r'cat > "\$CLAUDE_DIR/rules/code-quality\.md" << \'EOF\'',
 }
+for filename, pattern in rules.items():
+    content = sync_file(content, os.path.join(CLAUDE_DIR, "rules", filename), pattern, "EOF")
 
-# --- 2. Generate install commands ---
-install_lines = []
-for mkt in ["claude-plugins-official", "superpowers-dev", "claude-skills",
-             "python-backend-plugins", "ando-marketplace", "daviguides",
-             "daymade-skills"] + sorted(set(groups.keys()) - set(mkt_labels.keys())):
-    if mkt not in groups or mkt == "local":
-        continue
-    label = mkt_labels.get(mkt, mkt)
-    install_lines.append(f'echo ""')
-    install_lines.append(f'echo "  {label}"')
-    for pid in sorted(groups[mkt]):
-        install_lines.append(f'install_plugin "{pid}"')
+# =========================================================================
+# 2. SYNC CLAUDE.MD (router)
+# =========================================================================
 
-install_block = "\n".join(install_lines)
+print("[sync-setup] Checking CLAUDE.md...")
+content = sync_file(content,
+    os.path.join(CLAUDE_DIR, "CLAUDE.md"),
+    r'cat > "\$CLAUDE_DIR/CLAUDE\.md" << \'EOF\'',
+    "EOF")
 
-# --- 3. Generate enabledPlugins JSON ---
-enabled_items = []
-sorted_keys = sorted(plugins.keys())
-for i, k in enumerate(sorted_keys):
-    comma = "," if i < len(sorted_keys) - 1 else ""
-    enabled_items.append(f'    "{k}": true{comma}')
-enabled_json = "\n".join(enabled_items)
+# =========================================================================
+# 3. SYNC TEMPLATES
+# =========================================================================
 
-# --- 4. Generate extraKnownMarketplaces JSON ---
-mkt_items = []
-sorted_mkts = sorted(marketplaces.keys())
-for i, name in enumerate(sorted_mkts):
-    repo = marketplaces[name].get("source", {}).get("repo", "")
-    comma = "," if i < len(sorted_mkts) - 1 else ""
-    mkt_items.append(f'    "{name}": {{')
-    mkt_items.append(f'      "source": {{ "source": "github", "repo": "{repo}" }}')
-    mkt_items.append(f'    }}{comma}')
-mkt_json = "\n".join(mkt_items)
+print("[sync-setup] Checking templates...")
+templates = ["CLAUDE.md", "PROJECT_SCOPE.md", "CHANGELOG.md", "DECISIONS.md", "KNOWN_ISSUES.md"]
+for tmpl in templates:
+    content = sync_file(content,
+        os.path.join(CLAUDE_DIR, "templates", tmpl),
+        rf'cat > "\$CLAUDE_DIR/templates/{re.escape(tmpl)}" << \'EOF\'',
+        "EOF")
 
-# --- 5. Generate marketplace add commands ---
-mkt_add_lines = []
-for name in sorted(marketplaces.keys()):
-    repo = marketplaces[name].get("source", {}).get("repo", "")
-    if repo:
-        padded = f'"{repo}"'.ljust(55)
-        mkt_add_lines.append(f'add_marketplace {padded}"{name}"')
-mkt_add_block = "\n".join(mkt_add_lines)
+# =========================================================================
+# 4. SYNC COMMANDS
+# =========================================================================
 
-# --- 6. Counts ---
-non_local = [k for k in plugins if not k.endswith("@local")]
-plugin_count = len(non_local)
-mkt_count = len(marketplaces)
+print("[sync-setup] Checking commands...")
+for cmd in ["bootstrap", "release"]:
+    content = sync_file(content,
+        os.path.join(CLAUDE_DIR, "commands", f"{cmd}.md"),
+        rf'cat > "\$CLAUDE_DIR/commands/{cmd}\.md" << \'EOF\'',
+        "EOF")
 
-changed = False
+# =========================================================================
+# 5. SYNC CUSTOM SKILLS
+# =========================================================================
 
-# --- Replace plugin install commands section ---
-pattern = r'(# =+\n# 5\. PLUGINS.*?\nstep "14/15  Installing Plugins"\n\ninstall_plugin\(\) \{.*?\}\n)(.*?)((?:\n# =+\n# 6\. SETTINGS))'
-m = re.search(pattern, content, re.DOTALL)
-if m:
-    new_section = m.group(1) + "\n" + install_block + "\n" + m.group(3)
-    content = content[:m.start()] + new_section + content[m.end():]
-    changed = True
+print("[sync-setup] Checking custom skills...")
+skills_dir = os.path.join(CLAUDE_DIR, "skills")
+if os.path.isdir(skills_dir):
+    for skill_name in sorted(os.listdir(skills_dir)):
+        skill_file = os.path.join(skills_dir, skill_name, "SKILL.md")
+        if os.path.isfile(skill_file):
+            content = sync_file(content, skill_file,
+                rf'cat > ~/\.claude/skills/{re.escape(skill_name)}/SKILL\.md << \'SKILL\'',
+                "SKILL")
 
-# --- Replace enabledPlugins block ---
-pattern = r'("enabledPlugins": \{)\n.*?(\n  \})'
-m = re.search(pattern, content, re.DOTALL)
-if m:
-    # Check this is actually the enabledPlugins and not extraKnownMarketplaces
-    new_block = m.group(1) + "\n" + enabled_json + m.group(2)
-    content = content[:m.start()] + new_block + content[m.end():]
-    changed = True
+# =========================================================================
+# 6. SYNC MCP SERVERS (.mcp.json)
+# =========================================================================
 
-# --- Replace extraKnownMarketplaces block ---
-pattern = r'("extraKnownMarketplaces": \{)\n.*?(\n  \})'
-m = re.search(pattern, content, re.DOTALL)
-if m:
-    new_block = m.group(1) + "\n" + mkt_json + m.group(2)
-    content = content[:m.start()] + new_block + content[m.end():]
-    changed = True
+print("[sync-setup] Checking MCP servers...")
+mcp_file = os.path.join(CLAUDE_DIR, ".mcp.json")
+if os.path.isfile(mcp_file):
+    content = sync_file(content, mcp_file,
+        r'cat > "\$CLAUDE_DIR/\.mcp\.json" << \'MCPEOF\'',
+        "MCPEOF")
 
-# --- Replace marketplace add commands ---
-pattern = r'(add_marketplace [^\n]+\n)+'
-m = re.search(pattern, content)
-if m:
-    content = content[:m.start()] + mkt_add_block + "\n" + content[m.end():]
-    changed = True
+# =========================================================================
+# 7. SYNC SETTINGS.JSON + PLUGIN COUNTS
+# =========================================================================
 
-# --- Replace the entire settings.json heredoc block ---
-settings_formatted = json.dumps(settings, indent=2)
-pattern = r"cat > ~/\.claude/settings\.json << 'JSON'\n.*?\nJSON"
-m = re.search(pattern, content, re.DOTALL)
-if m:
-    new_block = "cat > ~/.claude/settings.json << 'JSON'\n" + settings_formatted + "\nJSON"
-    if m.group(0) != new_block:
-        content = content[:m.start()] + new_block + content[m.end():]
-        changed = True
+print("[sync-setup] Checking settings.json & plugins...")
+if os.path.isfile(SETTINGS_FILE):
+    with open(SETTINGS_FILE) as f:
+        settings = json.load(f)
 
-# --- Update counts ---
-for old, new in [
-    (r'#   5\.\s+\d+\+ plugins across all categories',
-     f'#   5.  {plugin_count}+ plugins across all categories'),
-    (r'# 5\. PLUGINS \(\d+ total\)',
-     f'# 5. PLUGINS ({plugin_count} total)'),
-    (r'Plugins\s+: \d+\+ marketplace',
-     f'Plugins      : {plugin_count}+ marketplace'),
-    (r'Marketplaces : \d+',
-     f'Marketplaces : {mkt_count}'),
-]:
-    c2 = re.sub(old, new, content)
-    if c2 != content:
-        content = c2
-        changed = True
+    # Replace settings.json heredoc
+    settings_formatted = json.dumps(settings, indent=2)
+    pattern = r"cat > ~/\.claude/settings\.json << 'JSON'\n.*?\nJSON"
+    m = re.search(pattern, content, re.DOTALL)
+    if m:
+        new_block = "cat > ~/.claude/settings.json << 'JSON'\n" + settings_formatted + "\nJSON"
+        if m.group(0) != new_block:
+            content = content[:m.start()] + new_block + content[m.end():]
+            changes.append("settings.json")
 
-if changed:
+    # Update plugin counts
+    plugins = {k: v for k, v in settings.get("enabledPlugins", {}).items() if v}
+    non_local = [k for k in plugins if not k.endswith("@local")]
+    plugin_count = len(non_local)
+    mkt_count = len(settings.get("extraKnownMarketplaces", {}))
+
+    for old, new in [
+        (r'#   5\.\s+\d+\+ plugins across all categories',
+         f'#   5.  {plugin_count}+ plugins across all categories'),
+        (r'Plugins\s+: \d+\+ marketplace',
+         f'Plugins      : {plugin_count}+ marketplace'),
+        (r'Marketplaces : \d+',
+         f'Marketplaces : {mkt_count}'),
+    ]:
+        content = re.sub(old, new, content)
+
+# =========================================================================
+# WRITE IF CHANGED
+# =========================================================================
+
+if content != original:
     with open(SETUP_FILE, "w") as f:
         f.write(content)
-    print("[sync-setup] setup.sh updated")
+    print(f"[sync-setup] Updated: {', '.join(changes) if changes else 'formatting'}")
+    sys.exit(42)  # Signal: changes were made
 else:
     print("[sync-setup] setup.sh already up to date")
-
-sys.exit(0 if not changed else 42)  # 42 = changes were made
+    sys.exit(0)
 PYEOF
 
 SYNC_EXIT=$?
-set -e
 
 # ---------------------------------------------------------------------------
-# Commit and push if there were changes (exit code 42)
+# Commit and push if changes were made (exit 42)
 # ---------------------------------------------------------------------------
 
-cd "$SCRIPT_DIR"
-
-cd "$SCRIPT_DIR"
-
-if ! git diff --quiet setup.sh 2>/dev/null && ! git diff --quiet sync-setup.sh 2>/dev/null; then
-  # No actual file changes
-  echo "[sync-setup] No changes to push"
+if [ $SYNC_EXIT -ne 42 ]; then
   exit 0
 fi
 
-# Check for any unstaged changes in our files
+cd "$SCRIPT_DIR"
+
 if git diff --quiet setup.sh sync-setup.sh 2>/dev/null; then
-  echo "[sync-setup] No changes to push"
+  echo "[sync-setup] No git changes detected"
   exit 0
 fi
+
+echo "[sync-setup] Committing and pushing..."
 
 git add setup.sh sync-setup.sh 2>/dev/null
 git commit -m "Auto-sync: update plugins/skills from settings.json" 2>/dev/null || {

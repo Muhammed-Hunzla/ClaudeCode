@@ -265,10 +265,11 @@ Do not define rules here — link to them.
 
 ## Quick Reference
 
-- **Start of every session**: Read `PROJECT_SCOPE.md` and `CHANGELOG.md` before doing anything.
-- **End of every task**: Update `CHANGELOG.md` and `PROJECT_SCOPE.md` before responding as done.
-- **New project**: Bootstrap required files from `~/.claude/templates/` if they don't exist.
+- **Start of every session**: Read `.claude/PROJECT_SCOPE.md` and `.claude/CHANGELOG.md` before doing anything.
+- **End of every task**: Verify changes work, then update `.claude/CHANGELOG.md` and `.claude/PROJECT_SCOPE.md` before responding as done.
+- **New project**: Bootstrap required files from `~/.claude/templates/` into the project's `.claude/` directory if they don't exist.
 - **One source of truth**: Never duplicate constants, configs, or state. Define once, reference everywhere.
+- **Always verify**: Never claim a task is done without running the verification command and reading the output.
 
 ---
 
@@ -358,7 +359,16 @@ Format: `## [Unreleased]` section at the top, entries under these categories:
 - `### Removed` — removed features
 - `### Security` — security fixes
 
-Each entry: one line with timestamp prefix `[YYYY-MM-DD hh:MM AM/PM]`, imperative tense.
+Each entry: one line with timestamp prefix `[YYYY-MM-DD hh:MM AM/PM]`, imperative tense. Example:
+```
+### Added
+- [2026-03-26 02:30 PM] User authentication via JWT tokens
+
+### Fixed
+- [2026-03-26 03:45 PM] Login redirect loop when session expires
+```
+
+When a version is released, move `[Unreleased]` entries under a `## [x.y.z] - YYYY-MM-DD` heading.
 
 ### 2. Update .claude/PROJECT_SCOPE.md
 
@@ -563,66 +573,229 @@ cat > "$CLAUDE_DIR/templates/CLAUDE.md" << 'EOF'
 # [PROJECT NAME] — Claude Configuration
 
 ## Rules
-This project follows user-level rules at `~/.claude/CLAUDE.md`.
+
+This project follows user-level rules defined at `~/.claude/CLAUDE.md`.
+
+| Category | File |
+|---|---|
+| Project Standards | `~/.claude/rules/project-standards.md` |
+| Maintenance Protocol | `~/.claude/rules/maintenance.md` |
+| Development Workflow | `~/.claude/rules/workflow.md` |
+| Code Quality | `~/.claude/rules/code-quality.md` |
+
+---
 
 ## Project Context
-**Stack**: [e.g., Next.js, TypeScript, PostgreSQL]
-**Purpose**: [One sentence]
 
-## Required Files
-- `PROJECT_SCOPE.md` · `CHANGELOG.md` · `DECISIONS.md` · `KNOWN_ISSUES.md`
+**Stack**: [e.g., Next.js, TypeScript, PostgreSQL, Prisma]
+**Purpose**: [One sentence describing what this project does]
+
+---
+
+## Required Maintenance Files
+
+- `PROJECT_SCOPE.md` — current state, in-progress features, next priorities
+- `CHANGELOG.md` — all changes, auto-updated after every task
+- `DECISIONS.md` — architecture decisions and their rationale
+- `KNOWN_ISSUES.md` — active bugs, limitations, technical debt
+
+**Always read PROJECT_SCOPE.md and CHANGELOG.md at session start before making any changes.**
+
+---
+
+## Project-Specific Rules
+
+<!-- Add any project-specific overrides or additions below -->
+
+### Source of Truth Locations
+
+| Thing | Location |
+|---|---|
+| Constants | `[path]` |
+| Types | `[path]` |
+| API endpoints | `[path]` |
+| Environment config | `[path]` |
+
+### Notes
+
+<!-- Any specific patterns, gotchas, or decisions for this project -->
 EOF
 success "CLAUDE.md template"
 
 cat > "$CLAUDE_DIR/templates/PROJECT_SCOPE.md" << 'EOF'
 # Project Scope
-> Living document. Updated after every task.
+
+> Living document. Updated automatically after every task. Reflects current reality, not aspirations.
+
+---
 
 ## Current State
+
+<!-- What is fully working right now -->
 - [ ] Initial setup
 
+---
+
 ## In Progress
+
+<!-- What is actively being built this session. Format: `[feature] — where we left off` -->
 _Nothing in progress._
 
+---
+
 ## Known Issues
-_None. See KNOWN_ISSUES.md._
+
+<!-- Summary only — details in KNOWN_ISSUES.md -->
+_None known. See KNOWN_ISSUES.md for full tracking._
+
+---
 
 ## Next Priorities
+
+<!-- What comes after current work, in order -->
 1. _TBD_
+
+---
+
+## Features
+
+<!-- Brief description of each shipped feature and its current status -->
+| Feature | Status | Notes |
+|---|---|---|
+| — | — | — |
+
+---
+
+## Architecture Decisions
+
+<!-- Decisions made and why — prevents revisiting them -->
+| Decision | Reason | Date |
+|---|---|---|
+| — | — | — |
+
+---
+
+## Dependencies & Integrations
+
+<!-- External services, APIs, packages that are load-bearing -->
+| Dependency | Purpose | Notes |
+|---|---|---|
+| — | — | — |
+
+---
+
+_Last updated: [date]_
 EOF
 success "PROJECT_SCOPE.md template"
 
 cat > "$CLAUDE_DIR/templates/CHANGELOG.md" << 'EOF'
 # Changelog
+
+All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
 
 ## [Unreleased]
 
 ### Added
-- Initial project setup
+- [YYYY-MM-DD HH:MM] Initial project setup
+
+---
+
+<!-- When releasing a version, move [Unreleased] items here:
+
+## [x.y.z] - YYYY-MM-DD
+
+### Added
+-
+
+### Changed
+-
+
+### Fixed
+-
+
+### Removed
+-
+
+-->
 EOF
 success "CHANGELOG.md template"
 
 cat > "$CLAUDE_DIR/templates/DECISIONS.md" << 'EOF'
 # Architecture Decisions
-Records of significant technical decisions. Prevents revisiting settled decisions.
+
+Records of significant technical decisions made in this project.
+Purpose: prevent revisiting settled decisions and provide context for future changes.
+
+---
 
 ## Decision Log
-<!-- Add decisions here, newest first -->
+
+### [DECISION-001] — [Short title]
+
+**Date**: YYYY-MM-DD
+**Status**: Accepted | Superseded by DECISION-XXX | Deprecated
+
+**Context**
+What situation or problem required a decision?
+
+**Decision**
+What was decided?
+
+**Consequences**
+What are the trade-offs? What becomes easier or harder as a result?
+
+---
+
+<!-- Add new decisions above this line, newest first -->
 EOF
 success "DECISIONS.md template"
 
 cat > "$CLAUDE_DIR/templates/KNOWN_ISSUES.md" << 'EOF'
 # Known Issues
-Active bugs, limitations, and technical debt.
+
+Active bugs, limitations, and technical debt tracked here.
+Keeps PROJECT_SCOPE.md clean — this file holds the detail.
+
+---
 
 ## Active Bugs
+
 | ID | Severity | Description | Workaround | Reported |
 |---|---|---|---|---|
+| — | — | — | — | — |
+
+---
+
+## Limitations
+
+Things the project intentionally doesn't do yet, or can't do well.
+
+- —
+
+---
 
 ## Technical Debt
+
+Code that works but needs improvement before it becomes a real problem.
+
 | Area | Issue | Priority |
 |---|---|---|
+| — | — | — |
+
+---
+
+## Resolved
+
+| ID | Description | Fixed in |
+|---|---|---|
+| — | — | — |
+
+---
+
+_Last updated: [date]_
 EOF
 success "KNOWN_ISSUES.md template"
 
@@ -634,12 +807,67 @@ step "7/16  Commands"
 mkdir -p "$CLAUDE_DIR/commands"
 
 cat > "$CLAUDE_DIR/commands/bootstrap.md" << 'EOF'
-Bootstrap all required project files. Read the directory to infer project name, stack, and purpose. Create missing files from ~/.claude/templates/. Do not ask for confirmation.
+Bootstrap all required project files for this project.
+
+Follow these steps exactly:
+
+1. Read the current directory name and any existing files (package.json, pyproject.toml, README.md, etc.) to infer the project name, tech stack, and purpose.
+
+2. Create the `.claude/` directory in the project root if it doesn't exist.
+
+3. Check which required files already exist:
+   - `CLAUDE.md` (project root)
+   - `.claude/CHANGELOG.md`
+   - `.claude/PROJECT_SCOPE.md`
+   - `.claude/DECISIONS.md`
+   - `.claude/KNOWN_ISSUES.md`
+
+4. For each missing file, create it from the corresponding template at ~/.claude/templates/, filling in:
+   - Project name (from directory name or package.json)
+   - Tech stack (inferred from files present)
+   - Purpose (inferred from README or package.json description)
+   - Today's date where needed
+
+5. `CLAUDE.md` goes in the project root. All other governance files go in `.claude/`.
+
+6. If CLAUDE.md already exists but doesn't reference ~/.claude/CLAUDE.md, add the user-level rules import section to the top.
+
+7. After creating all files, print a summary of what was created vs already existed.
+
+8. If this is a git repo with no commits yet, suggest committing the bootstrap files as the first commit.
+
+Do not ask for confirmation — just do it and show what was created.
 EOF
 success "/bootstrap"
 
 cat > "$CLAUDE_DIR/commands/release.md" << 'EOF'
-Cut a release. Read CHANGELOG.md [Unreleased], determine next version (semver), rename section to dated version, create fresh [Unreleased]. Optionally commit and tag.
+Cut a release for this project.
+
+Follow these steps:
+
+1. Read CHANGELOG.md and find everything under `## [Unreleased]`. If it's empty or only has the initial setup entry, warn and ask if the user still wants to proceed.
+
+2. Read PROJECT_SCOPE.md to understand the current state.
+
+3. Determine the next version number:
+   - Check the most recent version in CHANGELOG.md (e.g. `## [1.2.0] - ...`)
+   - If no versions exist yet, start at `0.1.0`
+   - If the [Unreleased] section has breaking changes → bump major
+   - If it has new features (Added section) → bump minor
+   - If only fixes/changes → bump patch
+   - Show the user the proposed version and ask to confirm or override
+
+4. Once version is confirmed:
+   a. In CHANGELOG.md: rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD` (today's date) and add a fresh empty `## [Unreleased]` section above it
+   b. In PROJECT_SCOPE.md: update the version/release info if there's a relevant section
+
+5. If this is a git repo:
+   - Stage CHANGELOG.md and PROJECT_SCOPE.md
+   - Show the user the proposed commit message: `chore: release vX.Y.Z`
+   - Ask if they want to also create a git tag `vX.Y.Z`
+   - Wait for confirmation before committing or tagging
+
+6. Print the final release summary: version, date, what was included.
 EOF
 success "/release"
 
@@ -1194,53 +1422,77 @@ cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
 {
   "mcpServers": {
 
+    "______________________________CLIENT_HUNTING______________________________": {},
+
     "apollo-io": {
       "command": "npx",
       "args": ["-y", "@chainscore/apollo-io-mcp"],
-      "env": { "APOLLO_API_KEY": "YOUR_APOLLO_API_KEY_HERE" }
+      "env": {
+        "APOLLO_API_KEY": "YOUR_APOLLO_API_KEY_HERE"
+      }
     },
 
     "hunter-io": {
       "command": "npx",
       "args": ["-y", "hunter-mcp"],
-      "env": { "HUNTER_API_KEY": "YOUR_HUNTER_API_KEY_HERE" }
+      "env": {
+        "HUNTER_API_KEY": "YOUR_HUNTER_API_KEY_HERE"
+      }
     },
 
     "lusha": {
       "command": "npx",
       "args": ["-y", "@lusha-oss/lusha-public-api-mcp"],
-      "env": { "LUSHA_API_KEY": "YOUR_LUSHA_API_KEY_HERE" }
+      "env": {
+        "LUSHA_API_KEY": "YOUR_LUSHA_API_KEY_HERE"
+      }
     },
 
     "explorium-prospecting": {
       "command": "npx",
       "args": ["-y", "@explorium/vibeprospecting-mcp"],
-      "env": { "EXPLORIUM_API_KEY": "YOUR_EXPLORIUM_API_KEY_HERE" }
+      "env": {
+        "EXPLORIUM_API_KEY": "YOUR_EXPLORIUM_API_KEY_HERE"
+      }
     },
 
     "smartlead": {
       "command": "npx",
       "args": ["-y", "@leadmagic/smartlead-mcp-server"],
-      "env": { "SMARTLEAD_API_KEY": "YOUR_SMARTLEAD_API_KEY_HERE" }
+      "env": {
+        "SMARTLEAD_API_KEY": "YOUR_SMARTLEAD_API_KEY_HERE"
+      }
     },
 
     "cold-mailer": {
       "command": "npx",
       "args": ["-y", "cold-mailer-mcp"],
-      "env": { "EMAIL_USER": "YOUR_EMAIL_HERE", "EMAIL_PASS": "YOUR_EMAIL_APP_PASSWORD_HERE" }
+      "env": {
+        "EMAIL_USER": "YOUR_EMAIL_HERE",
+        "EMAIL_PASS": "YOUR_EMAIL_APP_PASSWORD_HERE"
+      }
     },
+
+    "______________________________LINKEDIN______________________________": {},
 
     "linkedin-scraper": {
       "command": "npx",
       "args": ["-y", "linkedin-mcp-server"],
-      "env": { "LINKEDIN_EMAIL": "YOUR_LINKEDIN_EMAIL_HERE", "LINKEDIN_PASSWORD": "YOUR_LINKEDIN_PASSWORD_HERE" }
+      "env": {
+        "LINKEDIN_EMAIL": "YOUR_LINKEDIN_EMAIL_HERE",
+        "LINKEDIN_PASSWORD": "YOUR_LINKEDIN_PASSWORD_HERE"
+      }
     },
 
     "linkedin-content": {
       "command": "npx",
       "args": ["-y", "@southleft/linkedin-mcp"],
-      "env": { "LINKEDIN_ACCESS_TOKEN": "YOUR_LINKEDIN_ACCESS_TOKEN_HERE" }
+      "env": {
+        "LINKEDIN_ACCESS_TOKEN": "YOUR_LINKEDIN_ACCESS_TOKEN_HERE"
+      }
     },
+
+    "______________________________WEB_SCRAPING______________________________": {},
 
     "google-maps-scraper": {
       "command": "npx",
@@ -1251,31 +1503,45 @@ cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
     "outscraper": {
       "command": "npx",
       "args": ["-y", "outscraper-mcp"],
-      "env": { "OUTSCRAPER_API_KEY": "YOUR_OUTSCRAPER_API_KEY_HERE" }
+      "env": {
+        "OUTSCRAPER_API_KEY": "YOUR_OUTSCRAPER_API_KEY_HERE"
+      }
     },
 
     "brightdata": {
       "command": "npx",
       "args": ["-y", "@brightdata/mcp"],
-      "env": { "API_TOKEN": "YOUR_BRIGHTDATA_API_TOKEN_HERE", "BROWSER_AUTH": "YOUR_BRIGHTDATA_BROWSER_AUTH_HERE" }
+      "env": {
+        "API_TOKEN": "YOUR_BRIGHTDATA_API_TOKEN_HERE",
+        "BROWSER_AUTH": "YOUR_BRIGHTDATA_BROWSER_AUTH_HERE"
+      }
     },
 
     "firecrawl": {
       "command": "npx",
       "args": ["-y", "firecrawl-mcp"],
-      "env": { "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY_HERE" }
+      "env": {
+        "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY_HERE"
+      }
     },
 
     "apify": {
       "command": "npx",
       "args": ["-y", "@apify/mcp-server-rag-web-browser"],
-      "env": { "APIFY_TOKEN": "YOUR_APIFY_TOKEN_HERE" }
+      "env": {
+        "APIFY_TOKEN": "YOUR_APIFY_TOKEN_HERE"
+      }
     },
+
+    "______________________________SOCIAL_OUTREACH______________________________": {},
 
     "twitter-x": {
       "command": "npx",
       "args": ["-y", "x-mcp"],
-      "env": { "X_USERNAME": "YOUR_X_USERNAME_HERE", "X_PASSWORD": "YOUR_X_PASSWORD_HERE" }
+      "env": {
+        "X_USERNAME": "YOUR_X_USERNAME_HERE",
+        "X_PASSWORD": "YOUR_X_PASSWORD_HERE"
+      }
     },
 
     "whatsapp": {
@@ -1287,13 +1553,18 @@ cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
     "telegram": {
       "command": "npx",
       "args": ["-y", "telegram-mcp"],
-      "env": { "TELEGRAM_API_ID": "YOUR_TELEGRAM_API_ID_HERE", "TELEGRAM_API_HASH": "YOUR_TELEGRAM_API_HASH_HERE" }
+      "env": {
+        "TELEGRAM_API_ID": "YOUR_TELEGRAM_API_ID_HERE",
+        "TELEGRAM_API_HASH": "YOUR_TELEGRAM_API_HASH_HERE"
+      }
     },
 
     "discord": {
       "command": "npx",
       "args": ["-y", "discord-mcp"],
-      "env": { "DISCORD_TOKEN": "YOUR_DISCORD_BOT_TOKEN_HERE" }
+      "env": {
+        "DISCORD_TOKEN": "YOUR_DISCORD_BOT_TOKEN_HERE"
+      }
     },
 
     "reddit-leads": {
@@ -1302,23 +1573,37 @@ cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
       "env": {}
     },
 
+    "______________________________FREELANCE_PLATFORMS______________________________": {},
+
     "upwork": {
       "command": "npx",
       "args": ["-y", "@chinchillaenterprises/mcp-upwork"],
-      "env": { "UPWORK_API_KEY": "YOUR_UPWORK_API_KEY_HERE", "UPWORK_API_SECRET": "YOUR_UPWORK_API_SECRET_HERE" }
+      "env": {
+        "UPWORK_API_KEY": "YOUR_UPWORK_API_KEY_HERE",
+        "UPWORK_API_SECRET": "YOUR_UPWORK_API_SECRET_HERE"
+      }
     },
+
+    "______________________________GHL______________________________": {},
 
     "gohighlevel-complete": {
       "command": "npx",
       "args": ["-y", "gohighlevel-mcp-complete"],
-      "env": { "GHL_API_KEY": "YOUR_GHL_API_KEY_HERE", "GHL_LOCATION_ID": "YOUR_GHL_LOCATION_ID_HERE" }
+      "env": {
+        "GHL_API_KEY": "YOUR_GHL_API_KEY_HERE",
+        "GHL_LOCATION_ID": "YOUR_GHL_LOCATION_ID_HERE"
+      }
     },
 
     "gohighlevel": {
       "command": "npx",
       "args": ["-y", "gohighlevel-mcp"],
-      "env": { "GHL_API_KEY": "YOUR_GHL_API_KEY_HERE" }
+      "env": {
+        "GHL_API_KEY": "YOUR_GHL_API_KEY_HERE"
+      }
     },
+
+    "______________________________SALESFORCE______________________________": {},
 
     "salesforce-cli": {
       "command": "npx",
@@ -1329,103 +1614,164 @@ cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
     "salesforce-api": {
       "command": "npx",
       "args": ["-y", "mcp-server-salesforce"],
-      "env": { "SF_LOGIN_URL": "https://login.salesforce.com", "SF_USERNAME": "YOUR_SF_USERNAME_HERE", "SF_PASSWORD": "YOUR_SF_PASSWORD_HERE", "SF_SECURITY_TOKEN": "YOUR_SF_SECURITY_TOKEN_HERE" }
+      "env": {
+        "SF_LOGIN_URL": "https://login.salesforce.com",
+        "SF_USERNAME": "YOUR_SF_USERNAME_HERE",
+        "SF_PASSWORD": "YOUR_SF_PASSWORD_HERE",
+        "SF_SECURITY_TOKEN": "YOUR_SF_SECURITY_TOKEN_HERE"
+      }
     },
+
+    "______________________________CRM______________________________": {},
 
     "hubspot": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-hubspot"],
-      "env": { "HUBSPOT_ACCESS_TOKEN": "YOUR_HUBSPOT_ACCESS_TOKEN_HERE" }
+      "env": {
+        "HUBSPOT_ACCESS_TOKEN": "YOUR_HUBSPOT_ACCESS_TOKEN_HERE"
+      }
     },
 
     "pipedrive": {
       "command": "npx",
       "args": ["-y", "mcp-pipedrive"],
-      "env": { "PIPEDRIVE_API_TOKEN": "YOUR_PIPEDRIVE_API_TOKEN_HERE" }
+      "env": {
+        "PIPEDRIVE_API_TOKEN": "YOUR_PIPEDRIVE_API_TOKEN_HERE"
+      }
     },
 
     "zoho-crm": {
       "command": "npx",
       "args": ["-y", "zoho-crm-mcp"],
-      "env": { "ZOHO_CLIENT_ID": "YOUR_ZOHO_CLIENT_ID_HERE", "ZOHO_CLIENT_SECRET": "YOUR_ZOHO_CLIENT_SECRET_HERE", "ZOHO_REFRESH_TOKEN": "YOUR_ZOHO_REFRESH_TOKEN_HERE" }
+      "env": {
+        "ZOHO_CLIENT_ID": "YOUR_ZOHO_CLIENT_ID_HERE",
+        "ZOHO_CLIENT_SECRET": "YOUR_ZOHO_CLIENT_SECRET_HERE",
+        "ZOHO_REFRESH_TOKEN": "YOUR_ZOHO_REFRESH_TOKEN_HERE"
+      }
     },
+
+    "______________________________AUTOMATION______________________________": {},
 
     "zapier": {
       "command": "npx",
       "args": ["-y", "zapier-mcp"],
-      "env": { "ZAPIER_MCP_API_KEY": "YOUR_ZAPIER_MCP_API_KEY_HERE" }
+      "env": {
+        "ZAPIER_MCP_API_KEY": "YOUR_ZAPIER_MCP_API_KEY_HERE"
+      }
     },
 
     "n8n-workflow-builder": {
       "command": "npx",
       "args": ["-y", "mcp-n8n-workflow-builder"],
-      "env": { "N8N_BASE_URL": "YOUR_N8N_URL_HERE", "N8N_API_KEY": "YOUR_N8N_API_KEY_HERE" }
+      "env": {
+        "N8N_BASE_URL": "YOUR_N8N_URL_HERE",
+        "N8N_API_KEY": "YOUR_N8N_API_KEY_HERE"
+      }
     },
 
     "n8n": {
       "command": "npx",
       "args": ["-y", "n8n-mcp-server"],
-      "env": { "N8N_BASE_URL": "YOUR_N8N_URL_HERE", "N8N_API_KEY": "YOUR_N8N_API_KEY_HERE" }
+      "env": {
+        "N8N_BASE_URL": "YOUR_N8N_URL_HERE",
+        "N8N_API_KEY": "YOUR_N8N_API_KEY_HERE"
+      }
     },
 
     "make-com": {
       "command": "npx",
       "args": ["-y", "@integromat/make-mcp-server"],
-      "env": { "MAKE_API_TOKEN": "YOUR_MAKE_API_TOKEN_HERE" }
+      "env": {
+        "MAKE_API_TOKEN": "YOUR_MAKE_API_TOKEN_HERE"
+      }
     },
+
+    "______________________________MARKETING_ADS______________________________": {},
 
     "google-ads": {
       "command": "npx",
       "args": ["-y", "@googleads/google-ads-mcp"],
-      "env": { "GOOGLE_ADS_DEVELOPER_TOKEN": "YOUR_GOOGLE_ADS_DEV_TOKEN_HERE", "GOOGLE_ADS_CLIENT_ID": "YOUR_GOOGLE_ADS_CLIENT_ID_HERE", "GOOGLE_ADS_CLIENT_SECRET": "YOUR_GOOGLE_ADS_CLIENT_SECRET_HERE", "GOOGLE_ADS_REFRESH_TOKEN": "YOUR_GOOGLE_ADS_REFRESH_TOKEN_HERE", "GOOGLE_ADS_CUSTOMER_ID": "YOUR_GOOGLE_ADS_CUSTOMER_ID_HERE" }
+      "env": {
+        "GOOGLE_ADS_DEVELOPER_TOKEN": "YOUR_GOOGLE_ADS_DEV_TOKEN_HERE",
+        "GOOGLE_ADS_CLIENT_ID": "YOUR_GOOGLE_ADS_CLIENT_ID_HERE",
+        "GOOGLE_ADS_CLIENT_SECRET": "YOUR_GOOGLE_ADS_CLIENT_SECRET_HERE",
+        "GOOGLE_ADS_REFRESH_TOKEN": "YOUR_GOOGLE_ADS_REFRESH_TOKEN_HERE",
+        "GOOGLE_ADS_CUSTOMER_ID": "YOUR_GOOGLE_ADS_CUSTOMER_ID_HERE"
+      }
     },
 
     "meta-ads": {
       "command": "npx",
       "args": ["-y", "@pipeboard/meta-ads-mcp"],
-      "env": { "META_ACCESS_TOKEN": "YOUR_META_ACCESS_TOKEN_HERE", "META_AD_ACCOUNT_ID": "YOUR_META_AD_ACCOUNT_ID_HERE" }
+      "env": {
+        "META_ACCESS_TOKEN": "YOUR_META_ACCESS_TOKEN_HERE",
+        "META_AD_ACCOUNT_ID": "YOUR_META_AD_ACCOUNT_ID_HERE"
+      }
     },
 
     "mailchimp": {
       "command": "npx",
       "args": ["-y", "mailchimp-mcp-server"],
-      "env": { "MAILCHIMP_API_KEY": "YOUR_MAILCHIMP_API_KEY_HERE" }
+      "env": {
+        "MAILCHIMP_API_KEY": "YOUR_MAILCHIMP_API_KEY_HERE"
+      }
     },
 
     "sendgrid": {
       "command": "npx",
       "args": ["-y", "sendgrid-mcp"],
-      "env": { "SENDGRID_API_KEY": "YOUR_SENDGRID_API_KEY_HERE" }
+      "env": {
+        "SENDGRID_API_KEY": "YOUR_SENDGRID_API_KEY_HERE"
+      }
     },
+
+    "______________________________COMMUNICATION______________________________": {},
 
     "twilio": {
       "command": "npx",
       "args": ["-y", "@twilio-labs/mcp"],
-      "env": { "TWILIO_ACCOUNT_SID": "YOUR_TWILIO_ACCOUNT_SID_HERE", "TWILIO_AUTH_TOKEN": "YOUR_TWILIO_AUTH_TOKEN_HERE" }
+      "env": {
+        "TWILIO_ACCOUNT_SID": "YOUR_TWILIO_ACCOUNT_SID_HERE",
+        "TWILIO_AUTH_TOKEN": "YOUR_TWILIO_AUTH_TOKEN_HERE"
+      }
     },
 
     "slack": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-slack"],
-      "env": { "SLACK_BOT_TOKEN": "YOUR_SLACK_BOT_TOKEN_HERE" }
+      "env": {
+        "SLACK_BOT_TOKEN": "YOUR_SLACK_BOT_TOKEN_HERE"
+      }
     },
 
     "email-unified": {
       "command": "npx",
       "args": ["-y", "email-mcp"],
-      "env": { "EMAIL_PROVIDER": "gmail", "EMAIL_ADDRESS": "YOUR_EMAIL_HERE", "EMAIL_PASSWORD": "YOUR_EMAIL_APP_PASSWORD_HERE" }
+      "env": {
+        "EMAIL_PROVIDER": "gmail",
+        "EMAIL_ADDRESS": "YOUR_EMAIL_HERE",
+        "EMAIL_PASSWORD": "YOUR_EMAIL_APP_PASSWORD_HERE"
+      }
     },
+
+    "______________________________PAYMENTS______________________________": {},
 
     "stripe": {
       "command": "npx",
       "args": ["-y", "@stripe/mcp"],
-      "env": { "STRIPE_SECRET_KEY": "YOUR_STRIPE_SECRET_KEY_HERE" }
+      "env": {
+        "STRIPE_SECRET_KEY": "YOUR_STRIPE_SECRET_KEY_HERE"
+      }
     },
+
+    "______________________________PRODUCTIVITY______________________________": {},
 
     "notion": {
       "command": "npx",
       "args": ["-y", "@makenotion/notion-mcp-server"],
-      "env": { "NOTION_API_KEY": "YOUR_NOTION_API_KEY_HERE" }
+      "env": {
+        "NOTION_API_KEY": "YOUR_NOTION_API_KEY_HERE"
+      }
     }
   }
 }
