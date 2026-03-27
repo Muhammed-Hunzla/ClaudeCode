@@ -290,15 +290,15 @@ cat > "$CLAUDE_DIR/rules/project-standards.md" << 'EOF'
 
 ## Required Files
 
-Every project must contain these files. If any are missing at the start of a session, create them from `~/.claude/templates/` before proceeding.
+Every project must contain these files inside a `.claude/` subdirectory. If any are missing at the start of a session, create them from `~/.claude/templates/` before proceeding.
 
 | File | Purpose |
 |---|---|
-| `CLAUDE.md` | Project-level router → links back to user rules + project-specific rules |
-| `CHANGELOG.md` | Auto-maintained log of all changes, organized by version/date |
-| `PROJECT_SCOPE.md` | Living document: current state, in-progress features, next priorities |
-| `DECISIONS.md` | Architecture Decision Records — what was decided and why |
-| `KNOWN_ISSUES.md` | Active bugs, limitations, and technical debt |
+| `CLAUDE.md` | Project-level router → links back to user rules + project-specific rules (lives in project root) |
+| `.claude/CHANGELOG.md` | Auto-maintained log of all changes, organized by version/date |
+| `.claude/PROJECT_SCOPE.md` | Living document: current state, in-progress features, next priorities |
+| `.claude/DECISIONS.md` | Architecture Decision Records — what was decided and why |
+| `.claude/KNOWN_ISSUES.md` | Active bugs, limitations, and technical debt |
 
 ## Project CLAUDE.md Structure
 
@@ -306,14 +306,32 @@ Every project's `CLAUDE.md` must:
 1. Import user-level rules (reference `~/.claude/CLAUDE.md`)
 2. Define project-specific overrides or additions
 3. Specify the tech stack
-4. Point to `PROJECT_SCOPE.md` and `CHANGELOG.md`
+4. Point to `.claude/PROJECT_SCOPE.md` and `.claude/CHANGELOG.md`
+
+Use `~/.claude/templates/CLAUDE.md` as the starting point.
 
 ## Bootstrapping a New Project
 
 When starting work in a directory that lacks required files:
 1. Announce: "This project is missing required files. Creating them now."
-2. Create all required files from `~/.claude/templates/`
-3. Commit them as the first commit if the project is a git repo
+2. Create `.claude/` directory in the project root
+3. Create `CLAUDE.md` in project root from template — fill in project name and stack
+4. Create `.claude/PROJECT_SCOPE.md` from template — fill in initial state
+5. Create `.claude/CHANGELOG.md` from template
+6. Create `.claude/DECISIONS.md` from template
+7. Create `.claude/KNOWN_ISSUES.md` from template
+8. Commit them as the first commit if the project is a git repo
+
+## Continuing a Project Mid-Way (MANDATORY)
+
+When joining or resuming work on an existing project:
+1. **Audit the entire project** — read directory structure, key files, configs, and recent git history
+2. **Check all governance files exist** — if any of the 5 required files are missing, create them by analyzing the project's current state (not from blank templates)
+3. **Update `.claude/PROJECT_SCOPE.md`** — analyze the full project and write an accurate current state, not a guess
+4. **Update `.claude/KNOWN_ISSUES.md`** — scan for bugs, TODOs, broken tests, deprecation warnings, linting errors, and document them all
+5. **Update `.claude/DECISIONS.md`** — review architecture choices already made in the codebase and document them
+6. **Update `.claude/CHANGELOG.md`** — ensure it reflects the actual history of the project
+7. Only after all governance files are accurate: begin the requested work
 
 ## Directory Organization Principle
 
@@ -331,16 +349,47 @@ cat > "$CLAUDE_DIR/rules/maintenance.md" << 'EOF'
 
 After completing **any task** (feature, fix, refactor, config change), before declaring done:
 
-### 1. Update CHANGELOG.md
-Format: `## [Unreleased]` section at the top, entries under: Added, Changed, Fixed, Removed, Security.
+### 1. Update .claude/CHANGELOG.md
 
-### 2. Update PROJECT_SCOPE.md
-Update: Current State, In Progress, Known Issues, Next Priorities, Decisions.
+Format: `## [Unreleased]` section at the top, entries under these categories:
+- `### Added` — new features
+- `### Changed` — changes to existing features
+- `### Fixed` — bug fixes
+- `### Removed` — removed features
+- `### Security` — security fixes
+
+Each entry: one line with timestamp prefix `[YYYY-MM-DD hh:MM AM/PM]`, imperative tense.
+
+### 2. Update .claude/PROJECT_SCOPE.md
+
+Update these sections as they change:
+- **Current State** — what is fully working right now
+- **In Progress** — what is actively being built (update every session)
+- **Known Issues** — bugs or limitations discovered while working
+- **Next Priorities** — what comes after current work
+- **Decisions** — architectural decisions made and why (prevents revisiting them)
 
 ## Rules
-- Never say a task is done without updating both files
+
+- Never say a task is done without updating **ALL FOUR** governance files (CHANGELOG, PROJECT_SCOPE, DECISIONS, KNOWN_ISSUES)
+- Every task completion requires reviewing and updating each file:
+  - `CHANGELOG.md` — log what changed
+  - `PROJECT_SCOPE.md` — update current state, in-progress, priorities
+  - `DECISIONS.md` — log any architectural or design decisions made during the task
+  - `KNOWN_ISSUES.md` — add any new issues discovered, remove any that were fixed
+- If a task touches an existing feature, update its description in PROJECT_SCOPE.md
+- If a task introduces a new dependency or integration, note it in PROJECT_SCOPE.md under the relevant feature
 - Keep CHANGELOG entries brief — one line per change
-- Keep PROJECT_SCOPE.md accurate, not aspirational
+- Keep PROJECT_SCOPE.md accurate, not aspirational — it must reflect current reality
+- If a governance file has no changes needed, still verify it is accurate — do not skip the check
+
+## Single Source of Truth Enforcement
+
+Before adding a new constant, config value, or type:
+1. Search the project for an existing definition
+2. If found: use it, do not duplicate
+3. If not found: create it in the canonical location (see project-standards.md)
+4. Update .claude/PROJECT_SCOPE.md if it affects architecture
 EOF
 success "maintenance.md"
 
@@ -348,22 +397,89 @@ cat > "$CLAUDE_DIR/rules/workflow.md" << 'EOF'
 # Development Workflow
 
 ## Session Start Checklist
-1. Read `PROJECT_SCOPE.md` — understand current state
-2. Read `CHANGELOG.md` (Unreleased section) — understand recent changes
-3. If either is missing, create from `~/.claude/templates/`
+
+At the start of every conversation (before reading any other code):
+1. Read `.claude/PROJECT_SCOPE.md` — understand current state and what's in progress
+2. Read `.claude/CHANGELOG.md` (Unreleased section) — understand what changed recently
+3. If either file is missing, create it from `~/.claude/templates/` first
+
+This prevents implementing something that conflicts with or duplicates existing work.
+
+## Before Implementing a Feature
+
+1. Check PROJECT_SCOPE.md: is this feature already in progress or done?
+2. Check if the feature touches any "In Progress" items — if yes, coordinate or warn
+3. Identify all files that will be affected — read them before changing them
+4. Identify any constants, types, or configs needed — locate the single source of truth
+5. If architecture decisions are needed, add them to `.claude/DECISIONS.md` (and summarize in PROJECT_SCOPE.md) before coding
+
+## During Implementation
+
+- One concern at a time — do not refactor unrelated code while implementing
+- If you discover a bug while implementing: add it to `.claude/KNOWN_ISSUES.md` and summarize in PROJECT_SCOPE.md, do not fix inline unless trivial
+- If you need to change something that other features depend on: warn the user before proceeding
+- Never rename or move a function/file without checking what imports it
+
+## Brainstorming Before Building (MANDATORY)
+
+Before creating, building, or implementing **anything** (feature, component, page, button, API, etc.):
+
+1. **Use the brainstorming skill** — discuss requirements, explore options, show alternatives
+2. **Present options to the user** — show mockups/previews in the browser when applicable
+3. **Get explicit user approval** on the chosen approach
+4. **Create a plan with steps** — then implement step by step
+5. Never jump straight to code — always discuss first, even for small features
+
+This applies to ALL creation work: UI components, backend features, configs, integrations — everything.
 
 ## Verifying Changes with Playwright
-**MANDATORY**: Always use Playwright in **headed mode** (real visible browser window) — never headless.
+
+**MANDATORY**: When verifying any UI or web change, always use Playwright in **headed mode** (real visible browser window) — never headless.
+
 - Launch with `headless: false` so the actual browser window opens
 - Interact with the page as a human would — click, scroll, fill forms
 - Only confirm a task is complete after visually verifying it in the opened window
+- Do not mark something done based on code inspection alone when a browser test is possible
+
+## Screenshot & Test Artifact Organization
+
+**Never place screenshots or test artifacts in the project root directory.**
+
+- Screenshots go in the relevant plugin/tool folder (e.g., `playwright-mcp/screenshots/`, `tests/screenshots/`)
+- Test reports go in the tool's output directory (e.g., `playwright-mcp/reports/`)
+- Maintain corporate-level directory structure — no loose files in root
+- If a dedicated folder doesn't exist, create one inside the relevant plugin/tool directory before saving
+
+## Verification Before Completion (MANDATORY)
+
+Before claiming ANY task is done, fixed, or working:
+
+1. **Identify** the verification command (test suite, build, lint, browser check)
+2. **Run** the command — fresh, complete, not a previous run
+3. **Read** the full output — check exit code, count failures
+4. **Test the actual functionality** — run the code, open in browser, execute the feature
+5. **Only then** claim the result with evidence
+
+Never say "it's fixed", "should work", or "done" without running verification first. If there's no automated test, manually verify by running the code or checking in the browser. Evidence before assertions — always. **No exceptions.**
 
 ## After Completing a Task
-1. Update `CHANGELOG.md` under `## [Unreleased]`
-2. Update `PROJECT_SCOPE.md`
-3. Only then: declare the task done
+
+1. Update `.claude/CHANGELOG.md` under `## [Unreleased]`
+2. Update `.claude/PROJECT_SCOPE.md`:
+   - Move completed items from "In Progress" to "Current State"
+   - Update "Known Issues" if anything was fixed
+   - Update "Next Priorities" if the task changes what comes next
+3. If new dependencies were added, note them
+4. Only then: declare the task done
+
+## Feature Flags & Incremental Work
+
+- If a feature is partially done, mark it in PROJECT_SCOPE.md as `[partial]` with what works and what doesn't
+- Never leave the project in a broken state — if mid-feature, ensure existing features still work
+- If a session ends mid-task, update PROJECT_SCOPE.md `## In Progress` with exactly where you stopped
 
 ## Dependency Awareness
+
 Before modifying a shared utility, type, or config:
 1. Run a search to find all usages
 2. List the affected files to the user
@@ -375,16 +491,64 @@ cat > "$CLAUDE_DIR/rules/code-quality.md" << 'EOF'
 # Code Quality Rules
 
 ## Single Source of Truth
-Define once, reference everywhere. Constants, types, env vars, API endpoints — one canonical location each.
+
+The most important rule: **define once, reference everywhere**.
+
+- Constants → one file (e.g., `constants.ts`, `config.py`, `config/index.js`)
+- Types/interfaces → one directory (e.g., `types/`, `models/`)
+- Environment variables → accessed through one wrapper, not `process.env.X` scattered everywhere
+- API endpoints → one place (e.g., `api/endpoints.ts`)
+- Feature flags → one place (e.g., `config/features.ts`)
+
+If you need to use the same value in two places: find where it's defined and import it. Never copy-paste a constant.
 
 ## Minimal Changes
-Only change what the task requires. No unrelated refactors, no extra docstrings, no over-engineering.
+
+- Only change what the task requires
+- Do not refactor unrelated code while fixing a bug
+- Do not add docstrings, comments, or types to code you didn't change
+- Do not add error handling for scenarios that cannot happen
+- Three similar lines of code is better than a premature abstraction
+- No feature flags or backwards-compatibility shims — just change the code
+
+## No Over-Engineering
+
+- Don't design for hypothetical future requirements
+- Don't create helpers for one-time operations
+- Don't add configurability that isn't needed now
+- The right complexity is the minimum needed for the current task
 
 ## Security Baseline
-Never commit secrets. Validate external inputs. No SQL/command injection or XSS.
+
+- Never commit secrets, tokens, or passwords — use environment variables
+- Validate all external inputs (user input, API responses, file reads)
+- Trust internal code — don't add defensive checks on values you just set
+- No SQL injection, no command injection, no XSS
 
 ## Naming
-Names must be accurate. Booleans: `isX`, `hasX`, `canX`. No stale names.
+
+- Names must be accurate and reflect current behavior — rename if the behavior changes
+- Don't leave stale names like `newX`, `oldX`, `tempX`, `X2` in production code
+- Boolean names: `isX`, `hasX`, `canX` — never just `flag` or `status`
+
+## Clean Code Enforcement (MANDATORY)
+
+Code must be clean at all times. No messy or useless code sitting in the project.
+
+- **Remove dead code** — unused functions, variables, imports, commented-out blocks. Delete them, don't leave them "just in case"
+- **Remove debug artifacts** — console.log, print statements, debugger keywords, test data left inline
+- **Remove stale comments** — outdated TODOs, commented-out alternatives, "temporary" notes that are now permanent
+- **Clean up after yourself** — if you refactor or replace something, delete the old version completely
+- **No orphan files** — if a file is no longer imported or used anywhere, delete it
+- **No placeholder code** — no empty functions, no `// TODO: implement`, no pass-through wrappers that do nothing
+- After every task, review the changed files and their surroundings — clean anything messy you see
+
+## Before Submitting
+
+- Read the diff — does it do exactly what was asked, nothing more?
+- Are there any leftover debug statements or TODO comments?
+- Is anything duplicated that shouldn't be?
+- Is there any dead code, unused imports, or orphan files? Remove them.
 EOF
 success "code-quality.md"
 
