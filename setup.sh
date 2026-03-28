@@ -1230,9 +1230,22 @@ step "13/16  Plugin Marketplaces"
 add_marketplace() {
   local repo="$1"
   local label="$2"
+  local timeout_sec=60
   log "Adding marketplace: $label ($repo)"
   # Use full HTTPS URL to avoid SSH auth issues on machines without SSH keys
-  claude plugin marketplace add "https://github.com/${repo}.git" 2>&1 | grep -E "Successfully|already|Failed" | head -1 \
+  # Wrap with timeout to prevent hanging on clone failures
+  local output
+  if command -v timeout &>/dev/null; then
+    output=$(timeout "$timeout_sec" claude plugin marketplace add "https://github.com/${repo}.git" 2>&1)
+  else
+    output=$(claude plugin marketplace add "https://github.com/${repo}.git" 2>&1)
+  fi
+  local exit_code=$?
+  if [ "$exit_code" -eq 124 ]; then
+    fail "$label — timed out after ${timeout_sec}s"
+    return
+  fi
+  echo "$output" | grep -E "Successfully|already|Failed" | head -1 \
     && success "$label" || fail "$label"
 }
 
