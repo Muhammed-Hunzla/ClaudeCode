@@ -21,12 +21,22 @@ if [ ! -f "$SETUP_FILE" ]; then
   exit 0
 fi
 
+# Detect python command (python3 on macOS/Linux, python on Windows)
+if command -v python3 &>/dev/null; then
+  PYTHON_CMD="python3"
+elif command -v python &>/dev/null; then
+  PYTHON_CMD="python"
+else
+  echo "[sync-setup] Python not found — skipping"
+  exit 0
+fi
+
 # ---------------------------------------------------------------------------
 # Full sync via Python — handles rules, CLAUDE.md, templates, commands,
 # skills, MCP, settings.json, and plugins in one pass
 # ---------------------------------------------------------------------------
 
-python3 << 'PYEOF'
+$PYTHON_CMD << 'PYEOF'
 import json, re, os, sys, glob
 
 SCRIPT_DIR = os.environ["SCRIPT_DIR"]

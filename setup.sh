@@ -56,6 +56,16 @@ if [ "$OS" = "mac" ]; then
   LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 fi
 
+# Detect python command (python3 on macOS/Linux, python on Windows)
+if command -v python3 &>/dev/null; then
+  PYTHON_CMD="python3"
+elif command -v python &>/dev/null; then
+  PYTHON_CMD="python"
+else
+  echo "Python not found — install Python 3 before running this script."
+  exit 1
+fi
+
 BOLD="\033[1m"
 GREEN="\033[0;32m"
 YELLOW="\033[0;33m"
@@ -1177,12 +1187,13 @@ VBSCRIPT
     warn "Could not find Startup folder — copy start-router.vbs manually"
   fi
 
-  # Start the router now
-  node "$ROUTER_DIR/router.js" &>/dev/null &
-  ROUTER_PID=$!
+  # Start the router now (detached so it survives Git Bash closing)
+  WIN_NODE=$(cygpath -w "$(which node 2>/dev/null || echo node)" 2>/dev/null || echo "node")
+  WIN_ROUTER_JS=$(cygpath -w "$ROUTER_DIR/router.js" 2>/dev/null || echo "$ROUTER_DIR/router.js")
+  cmd //c start //B "" "$WIN_NODE" "$WIN_ROUTER_JS" >NUL 2>&1
   sleep 2
-  if kill -0 "$ROUTER_PID" 2>/dev/null; then
-    success "Router running on http://localhost:3131 (PID: $ROUTER_PID)"
+  if netstat -ano 2>/dev/null | grep -q ":3131.*LISTENING"; then
+    success "Router running on http://localhost:3131"
   else
     warn "Router failed to start. Run manually: node $ROUTER_DIR/router.js"
   fi
@@ -1220,7 +1231,8 @@ add_marketplace() {
   local repo="$1"
   local label="$2"
   log "Adding marketplace: $label ($repo)"
-  claude plugin marketplace add "$repo" 2>&1 | grep -E "Successfully|already|Failed" | head -1 \
+  # Use full HTTPS URL to avoid SSH auth issues on machines without SSH keys
+  claude plugin marketplace add "https://github.com/${repo}.git" 2>&1 | grep -E "Successfully|already|Failed" | head -1 \
     && success "$label" || fail "$label"
 }
 
@@ -1244,15 +1256,27 @@ step "14/16  Installing Plugins"
 
 install_plugin() {
   local plugin="$1"
+  local timeout_sec=30
   local attempt=1
   local max_attempts=2
   while [ $attempt -le $max_attempts ]; do
-    output=$(claude plugin install "$plugin" 2>&1)
+    # Use timeout to prevent hanging on unavailable marketplaces
+    if command -v timeout &>/dev/null; then
+      output=$(timeout "$timeout_sec" claude plugin install "$plugin" 2>&1)
+    else
+      output=$(claude plugin install "$plugin" 2>&1)
+    fi
+    local exit_code=$?
     if echo "$output" | grep -qi "success"; then
       success "$plugin"
       return
     elif echo "$output" | grep -qi "already installed"; then
       success "$plugin (already installed)"
+      return
+    fi
+    # Exit code 124 = timeout killed the process
+    if [ "$exit_code" -eq 124 ]; then
+      fail "$plugin — timed out after ${timeout_sec}s"
       return
     fi
     if [ $attempt -lt $max_attempts ]; then
@@ -1793,14 +1817,14 @@ if [ "$OS" = "mac" ]; then
 elif [ "$OS" = "windows" ]; then
   NOTIFY_CMD="powershell -Command \"[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [void][System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention','Claude Code')\" 2>/dev/null || true"
   STOP_NOTIFY_CMD="powershell -Command \"[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [void][System.Windows.Forms.MessageBox]::Show('Claude Code has finished','Claude Code')\" 2>/dev/null || true"
-  SYNC_CMD="echo [sync] SessionEnd sync not configured for Windows yet"
+  SYNC_CMD="bash $HOME/Documents/GitHub/ClaudeCode/sync-setup.sh 2>&1 | tail -3 || true"
 else
   NOTIFY_CMD="echo Claude Code needs your attention"
   STOP_NOTIFY_CMD="echo Claude Code has finished"
   SYNC_CMD="echo [sync] SessionEnd sync not configured for this OS"
 fi
 
-python3 -c "
+$PYTHON_CMD -c "
 import json, os, sys
 
 notify = sys.argv[1]
