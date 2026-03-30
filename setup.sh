@@ -18,8 +18,8 @@
 #   4.  8 plugin marketplaces
 #   5.  123+ plugins across all categories
 #   6.  CLAUDE.md (user-level config router)
-#   7.  4 rule modules (rules/)
-#   8.  5 project templates (templates/)
+#   7.  5 rule modules (rules/)
+#   8.  6 project templates (templates/)
 #   9.  2 custom commands (/bootstrap, /release)
 #   10. Memory files (preferences & feedback)
 #   11. Autopilot plugin (multi-agent orchestrator)
@@ -270,6 +270,7 @@ Do not define rules here — link to them.
 | Maintenance | [rules/maintenance.md](rules/maintenance.md) | CHANGELOG + PROJECT_SCOPE update protocol |
 | Workflow | [rules/workflow.md](rules/workflow.md) | Pre/post task checklist, feature implementation flow |
 | Code Quality | [rules/code-quality.md](rules/code-quality.md) | Single source of truth, naming, DRY principles |
+| Onboarding | [rules/project-onboarding.md](rules/project-onboarding.md) | Project intake flow, user input, task list creation & tracking |
 
 ---
 
@@ -277,7 +278,8 @@ Do not define rules here — link to them.
 
 - **Start of every session**: Read `.claude/PROJECT_SCOPE.md` and `.claude/CHANGELOG.md` before doing anything.
 - **End of every task**: Verify changes work, then update `.claude/CHANGELOG.md` and `.claude/PROJECT_SCOPE.md` before responding as done.
-- **New project**: Bootstrap required files from `~/.claude/templates/` into the project's `.claude/` directory if they don't exist.
+- **New project**: Trigger onboarding flow — ask user for docs/context, analyze code, then bootstrap `.claude/` files.
+- **Missing TASKLIST.md**: Ask user for project documents/details before generating tasks.
 - **One source of truth**: Never duplicate constants, configs, or state. Define once, reference everywhere.
 - **Always verify**: Never claim a task is done without running the verification command and reading the output.
 
@@ -310,6 +312,7 @@ Every project must contain these files inside a `.claude/` subdirectory. If any 
 | `.claude/PROJECT_SCOPE.md` | Living document: current state, in-progress features, next priorities |
 | `.claude/DECISIONS.md` | Architecture Decision Records — what was decided and why |
 | `.claude/KNOWN_ISSUES.md` | Active bugs, limitations, and technical debt |
+| `.claude/TASKLIST.md` | Task tracker with completed/pending tasks, updated after every task |
 
 ## Project CLAUDE.md Structure
 
@@ -324,25 +327,30 @@ Use `~/.claude/templates/CLAUDE.md` as the starting point.
 ## Bootstrapping a New Project
 
 When starting work in a directory that lacks required files:
-1. Announce: "This project is missing required files. Creating them now."
-2. Create `.claude/` directory in the project root
-3. Create `CLAUDE.md` in project root from template — fill in project name and stack
-4. Create `.claude/PROJECT_SCOPE.md` from template — fill in initial state
-5. Create `.claude/CHANGELOG.md` from template
-6. Create `.claude/DECISIONS.md` from template
-7. Create `.claude/KNOWN_ISSUES.md` from template
-8. Commit them as the first commit if the project is a git repo
+1. **Trigger the onboarding flow** — follow `rules/project-onboarding.md` Phase 1-4
+2. Ask the user for project documents, requirements, and context BEFORE creating files
+3. Create `.claude/` directory in the project root
+4. Create `CLAUDE.md` in project root from template — fill in project name and stack
+5. Create `.claude/PROJECT_SCOPE.md` — populated from user input + code analysis (not blank template)
+6. Create `.claude/TASKLIST.md` — populated with tasks derived from user docs + code analysis
+7. Create `.claude/CHANGELOG.md` from template
+8. Create `.claude/DECISIONS.md` from template
+9. Create `.claude/KNOWN_ISSUES.md` from template
+10. Commit them as the first commit if the project is a git repo
 
 ## Continuing a Project Mid-Way (MANDATORY)
 
 When joining or resuming work on an existing project:
-1. **Audit the entire project** — read directory structure, key files, configs, and recent git history
-2. **Check all governance files exist** — if any of the 5 required files are missing, create them by analyzing the project's current state (not from blank templates)
-3. **Update `.claude/PROJECT_SCOPE.md`** — analyze the full project and write an accurate current state, not a guess
-4. **Update `.claude/KNOWN_ISSUES.md`** — scan for bugs, TODOs, broken tests, deprecation warnings, linting errors, and document them all
-5. **Update `.claude/DECISIONS.md`** — review architecture choices already made in the codebase and document them
-6. **Update `.claude/CHANGELOG.md`** — ensure it reflects the actual history of the project
-7. Only after all governance files are accurate: begin the requested work
+1. **Check for `.claude/TASKLIST.md`** — if missing, trigger the onboarding flow (see `rules/project-onboarding.md`)
+2. **Audit the entire project** — read directory structure, key files, configs, and recent git history
+3. **Check all governance files exist** — if any of the 6 required files are missing, create them by analyzing the project's current state (not from blank templates)
+4. **Ask the user for context** — if PROJECT_SCOPE or TASKLIST seem incomplete, ask for documents/requirements before proceeding
+5. **Update `.claude/PROJECT_SCOPE.md`** — analyze the full project and write an accurate current state, not a guess
+6. **Update `.claude/TASKLIST.md`** — cross-reference tasks against code to mark completed/pending accurately
+7. **Update `.claude/KNOWN_ISSUES.md`** — scan for bugs, TODOs, broken tests, deprecation warnings, linting errors, and document them all
+8. **Update `.claude/DECISIONS.md`** — review architecture choices already made in the codebase and document them
+9. **Update `.claude/CHANGELOG.md`** — ensure it reflects the actual history of the project
+10. Only after all governance files are accurate: begin the requested work
 
 ## Directory Organization Principle
 
@@ -391,10 +399,11 @@ Update these sections as they change:
 
 ## Rules
 
-- Never say a task is done without updating **ALL FOUR** governance files (CHANGELOG, PROJECT_SCOPE, DECISIONS, KNOWN_ISSUES)
+- Never say a task is done without updating **ALL FIVE** governance files (CHANGELOG, PROJECT_SCOPE, TASKLIST, DECISIONS, KNOWN_ISSUES)
 - Every task completion requires reviewing and updating each file:
   - `CHANGELOG.md` — log what changed
   - `PROJECT_SCOPE.md` — update current state, in-progress, priorities
+  - `TASKLIST.md` — mark completed tasks as `[x]` with timestamp, update pending/blocked status
   - `DECISIONS.md` — log any architectural or design decisions made during the task
   - `KNOWN_ISSUES.md` — add any new issues discovered, remove any that were fixed
 - If a task touches an existing feature, update its description in PROJECT_SCOPE.md
@@ -420,8 +429,10 @@ cat > "$CLAUDE_DIR/rules/workflow.md" << 'EOF'
 
 At the start of every conversation (before reading any other code):
 1. Read `.claude/PROJECT_SCOPE.md` — understand current state and what's in progress
-2. Read `.claude/CHANGELOG.md` (Unreleased section) — understand what changed recently
-3. If either file is missing, create it from `~/.claude/templates/` first
+2. Read `.claude/TASKLIST.md` — understand what tasks are completed and pending
+3. Read `.claude/CHANGELOG.md` (Unreleased section) — understand what changed recently
+4. If TASKLIST.md is missing — trigger the onboarding flow (see `rules/project-onboarding.md`): ask the user for project documents/details, then analyze code and create the task list
+5. If other files are missing, create them from `~/.claude/templates/` first
 
 This prevents implementing something that conflicts with or duplicates existing work.
 
@@ -484,13 +495,18 @@ Never say "it's fixed", "should work", or "done" without running verification fi
 
 ## After Completing a Task
 
-1. Update `.claude/CHANGELOG.md` under `## [Unreleased]`
-2. Update `.claude/PROJECT_SCOPE.md`:
+1. Update `.claude/TASKLIST.md`:
+   - Change `- [ ]` to `- [x]` for the completed task
+   - Add `(completed YYYY-MM-DD)` timestamp
+   - Move task from "Pending" or "In Progress" to "Completed Tasks" section
+   - Update the Summary counts
+2. Update `.claude/CHANGELOG.md` under `## [Unreleased]`
+3. Update `.claude/PROJECT_SCOPE.md`:
    - Move completed items from "In Progress" to "Current State"
    - Update "Known Issues" if anything was fixed
    - Update "Next Priorities" if the task changes what comes next
-3. If new dependencies were added, note them
-4. Only then: declare the task done
+4. If new dependencies were added, note them
+5. Only then: declare the task done
 
 ## Feature Flags & Incremental Work
 
@@ -571,6 +587,144 @@ Code must be clean at all times. No messy or useless code sitting in the project
 - Is there any dead code, unused imports, or orphan files? Remove them.
 EOF
 success "code-quality.md"
+
+cat > "$CLAUDE_DIR/rules/project-onboarding.md" << 'EOF'
+# Project Onboarding — Intake & Task Discovery
+
+## When This Applies
+
+This rule triggers at the **start of every new project session** — when entering a project directory for the first time OR when `.claude/PROJECT_SCOPE.md` is missing or contains only template placeholders.
+
+---
+
+## Phase 1: Ask the User for Context (MANDATORY)
+
+**Never auto-generate project scope from code alone.** Always ask the user first.
+
+Before analyzing any code, ask the user:
+
+> "I'm starting work on this project. To build an accurate project scope and task list, I need some context:
+>
+> 1. **Project documents** — Do you have a PRD, spec, Figma design, task list, or any planning documents? (Share files, links, or paste content)
+> 2. **What is the project?** — Brief description of what this project does and who it's for
+> 3. **Current status** — What's already built and working? What's in progress?
+> 4. **Priorities** — What should I focus on first?
+> 5. **Tech decisions** — Any specific tech stack, libraries, or patterns I should know about?
+>
+> Share whatever you have — even partial info helps. I'll combine your input with my code analysis to build a complete picture."
+
+### If the user provides documents/details:
+- Read and extract all requirements, features, tasks, and acceptance criteria
+- Use this as the **primary source** for PROJECT_SCOPE and TASKLIST
+- Code analysis supplements — it does not override user-provided requirements
+
+### If the user says "just analyze the code" or skips:
+- Proceed with code-only analysis (Phase 2)
+- Note in PROJECT_SCOPE.md: `> Scope generated from code analysis only. User did not provide project documents.`
+
+---
+
+## Phase 2: Deep Code Analysis
+
+After collecting user input (or if skipped), analyze the codebase thoroughly:
+
+### 2a. Structure Analysis
+- Read directory structure (top 2-3 levels)
+- Identify tech stack from package.json, requirements.txt, Cargo.toml, etc.
+- Identify frameworks, major dependencies, and their versions
+
+### 2b. Feature Discovery
+- Read main entry points, routes, API endpoints
+- Identify distinct features/modules by scanning key files
+- Check test coverage — what has tests, what doesn't
+
+### 2c. Completion Assessment
+- For each feature/task from user docs OR discovered in code:
+  - **Complete**: Code exists, works, has tests (or is trivially correct)
+  - **Partial**: Code exists but is incomplete, has TODOs, or lacks tests
+  - **Pending**: Mentioned in docs/scope but no code exists yet
+  - **Blocked**: Depends on something that isn't done
+
+### 2d. Issue Scan
+- Search for `TODO`, `FIXME`, `HACK`, `XXX` comments
+- Check for broken imports, unused exports, empty functions
+- Look for `.env.example` vs actual `.env` gaps
+- Check for failing tests (run test suite if safe)
+- Check for linting errors
+
+---
+
+## Phase 3: Build Governance Files
+
+Using **both** user input and code analysis, create/update:
+
+### 1. `.claude/PROJECT_SCOPE.md`
+- **Current State**: What actually works (verified by code, not assumed)
+- **In Progress**: What's partially built (with specifics on what's done/remaining)
+- **Known Issues**: From issue scan + user-reported issues
+- **Next Priorities**: From user's stated priorities, or inferred from project state
+- **Features table**: Every feature with accurate status
+- **Architecture Decisions**: From user input + patterns found in code
+
+### 2. `.claude/TASKLIST.md`
+- Cross-reference user's requirements against codebase
+- Every task gets a status: completed (checkbox checked) or pending (unchecked)
+- Group by feature/module
+- Include priority levels
+- Completed tasks include evidence (e.g., "file exists", "tests pass", "route works")
+
+### 3. Other governance files
+- `CHANGELOG.md`, `DECISIONS.md`, `KNOWN_ISSUES.md` — populated from analysis
+
+---
+
+## Phase 4: User Confirmation
+
+After generating all files, present a summary:
+
+> "Here's what I found:
+> - **X features complete**, **Y in progress**, **Z pending**
+> - **N known issues** discovered
+> - **Task list**: [brief overview of major pending items]
+>
+> Please review `.claude/TASKLIST.md` and `.claude/PROJECT_SCOPE.md`. Let me know if anything is wrong or missing before I start working."
+
+**Do not start implementation until the user confirms the scope and task list are accurate.**
+
+---
+
+## TASKLIST.md Management (Ongoing)
+
+### Check for TASKLIST.md at Session Start
+1. If `.claude/TASKLIST.md` exists — read it, understand current task status
+2. If `.claude/TASKLIST.md` does NOT exist — trigger the full onboarding flow (Phase 1-4)
+3. If it exists but seems outdated — ask the user if they want to refresh it
+
+### After Every Task Completion
+When a task is completed AND verified (tests pass, functionality works):
+1. Open `.claude/TASKLIST.md`
+2. Find the corresponding task
+3. Change `- [ ]` to `- [x]`
+4. Add completion timestamp: `(completed YYYY-MM-DD)`
+5. If subtasks exist, update those too
+6. Save the file
+
+### When User Provides New Tasks
+- Add them to TASKLIST.md under the appropriate category
+- Set priority based on user's guidance
+- Keep pending tasks sorted by priority within each category
+
+---
+
+## Rules
+
+- **User input is primary** — code analysis fills gaps, it doesn't replace what the user tells you
+- **Never fabricate tasks** — if you're unsure whether something is a requirement, ask
+- **Be specific** — "Build user auth" is too vague. "Implement JWT login endpoint with refresh tokens" is good
+- **Evidence-based status** — don't mark something complete unless you verified it exists and works
+- **Keep it current** — TASKLIST.md must reflect reality at all times, updated after every task
+EOF
+success "project-onboarding.md"
 
 # =============================================================================
 # 6. TEMPLATES
@@ -808,6 +962,73 @@ Code that works but needs improvement before it becomes a real problem.
 _Last updated: [date]_
 EOF
 success "KNOWN_ISSUES.md template"
+
+cat > "$CLAUDE_DIR/templates/TASKLIST.md" << 'EOF'
+# Task List
+
+> Auto-maintained task tracker. Updated after every task completion.
+> Source: User requirements + codebase analysis.
+
+---
+
+## Summary
+
+| Status | Count |
+|---|---|
+| Completed | 0 |
+| In Progress | 0 |
+| Pending | 0 |
+| Blocked | 0 |
+
+---
+
+## Completed Tasks
+
+<!-- Tasks that are done and verified. Format: - [x] Task description (completed YYYY-MM-DD) -->
+_No tasks completed yet._
+
+---
+
+## In Progress
+
+<!-- Tasks currently being worked on. Format: - [ ] Task description [priority] — current status -->
+_Nothing in progress._
+
+---
+
+## Pending Tasks
+
+<!-- Tasks not yet started. Sorted by priority within each category. -->
+
+### High Priority
+_None_
+
+### Medium Priority
+_None_
+
+### Low Priority
+_None_
+
+---
+
+## Blocked Tasks
+
+<!-- Tasks that can't start until a dependency is resolved. Format: - [ ] Task — blocked by: [reason] -->
+_None_
+
+---
+
+## Notes
+
+<!-- Any context about task priorities, deadlines, or dependencies -->
+- Task list generated from: _[user documents / code analysis / both]_
+- Last full review: _[date]_
+
+---
+
+_Last updated: [date]_
+EOF
+success "TASKLIST.md template"
 
 # =============================================================================
 # 7. COMMANDS

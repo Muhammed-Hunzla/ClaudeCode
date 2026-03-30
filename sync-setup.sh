@@ -88,6 +88,7 @@ rules = {
     "maintenance.md":       r'cat > "\$CLAUDE_DIR/rules/maintenance\.md" << \'EOF\'',
     "workflow.md":          r'cat > "\$CLAUDE_DIR/rules/workflow\.md" << \'EOF\'',
     "code-quality.md":      r'cat > "\$CLAUDE_DIR/rules/code-quality\.md" << \'EOF\'',
+    "project-onboarding.md": r'cat > "\$CLAUDE_DIR/rules/project-onboarding\.md" << \'EOF\'',
 }
 for filename, pattern in rules.items():
     content = sync_file(content, os.path.join(CLAUDE_DIR, "rules", filename), pattern, "EOF")
@@ -107,7 +108,7 @@ content = sync_file(content,
 # =========================================================================
 
 print("[sync-setup] Checking templates...")
-templates = ["CLAUDE.md", "PROJECT_SCOPE.md", "CHANGELOG.md", "DECISIONS.md", "KNOWN_ISSUES.md"]
+templates = ["CLAUDE.md", "PROJECT_SCOPE.md", "CHANGELOG.md", "DECISIONS.md", "KNOWN_ISSUES.md", "TASKLIST.md"]
 for tmpl in templates:
     content = sync_file(content,
         os.path.join(CLAUDE_DIR, "templates", tmpl),
