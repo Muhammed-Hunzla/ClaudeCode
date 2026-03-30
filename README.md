@@ -1,6 +1,6 @@
 # Claude Code Environment Setup
 
-One-script setup that restores a complete Claude Code development environment on any machine. Installs the CLI, 198+ plugins across 8 marketplaces, a model router, custom skills, governance rules, project templates, hooks, and 40+ MCP servers for CRM, sales, outreach, and automation.
+One-script setup that restores a complete Claude Code development environment on any machine. Installs the CLI, 123+ plugins across 8 marketplaces, a model router, custom skills, governance rules, project templates, hooks, and 40+ MCP servers for CRM, sales, outreach, and automation.
 
 ## Prerequisites
 
@@ -88,7 +88,7 @@ Cloned from GitHub:
 - [claude-orchestration](https://github.com/mbruhler/claude-orchestration) -- N8N-like workflow orchestration
 - [claude-code-workflow-orchestration](https://github.com/barkain/claude-code-workflow-orchestration) -- Hook-based task delegation
 
-### 10. Plugin Marketplaces (8) & 198+ Plugins
+### 10. Plugin Marketplaces (8) & 123+ Plugins
 
 **Marketplaces added:**
 
@@ -334,14 +334,13 @@ After running `setup.sh`, this is what gets created under `~/.claude/`:
 
 ## Auto-Sync
 
-The `sync-setup.sh` script keeps `setup.sh` in sync with your live `~/.claude/settings.json`:
+The `sync-setup.sh` script keeps `setup.sh` in sync with your entire live `~/.claude/` config:
 
 - Runs automatically on every Claude Code session end (via the `SessionEnd` hook)
-- Extracts current enabled plugins and marketplaces from settings.json
-- Regenerates the plugin sections in setup.sh
+- Syncs: rules, CLAUDE.md, templates, commands, skills, MCP servers, plugins, and settings.json
 - Commits and pushes changes to GitHub if anything changed
 
-This means whenever you install or remove plugins in Claude Code, your setup script is automatically updated for future machine setups.
+This means whenever you change rules, add plugins, update templates, or modify any config in Claude Code, your setup script is automatically updated for future machine setups.
 
 ## Customization
 
