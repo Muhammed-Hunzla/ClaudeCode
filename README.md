@@ -44,20 +44,22 @@ Global install of `@anthropic-ai/claude-code`.
 | `debug-helper` | Bug reports, error messages, unexpected behavior |
 | `test-writer` | "add tests", "write unit tests", "improve coverage" |
 
-### 4. CLAUDE.md & Rules (4 modules)
+### 4. CLAUDE.md & Rules (5 modules)
 A user-level config router (`~/.claude/CLAUDE.md`) that links to modular rule files:
 
 | Module | Purpose |
 |---|---|
 | `project-standards.md` | Required files, bootstrapping, directory organization |
-| `maintenance.md` | CHANGELOG + PROJECT_SCOPE update protocol |
+| `project-onboarding.md` | Project intake flow — asks user for docs/context, analyzes code, creates task list |
+| `maintenance.md` | CHANGELOG + PROJECT_SCOPE + TASKLIST update protocol |
 | `workflow.md` | Session checklists, Playwright headed mode, feature flow |
 | `code-quality.md` | Single source of truth, naming, DRY, security baseline |
 
-### 5. Project Templates (5)
+### 5. Project Templates (6)
 Auto-created for new projects via the `/bootstrap` command:
 - `CLAUDE.md` -- Project-level config
 - `PROJECT_SCOPE.md` -- Living state document
+- `TASKLIST.md` -- Task tracker with completed/pending tasks
 - `CHANGELOG.md` -- Keep-a-Changelog format
 - `DECISIONS.md` -- Architecture Decision Records
 - `KNOWN_ISSUES.md` -- Bugs and technical debt
@@ -299,12 +301,14 @@ After running `setup.sh`, this is what gets created under `~/.claude/`:
 ├── .mcp.json                          # 40+ MCP server configurations
 ├── rules/                             # Governance modules
 │   ├── project-standards.md
+│   ├── project-onboarding.md
 │   ├── maintenance.md
 │   ├── workflow.md
 │   └── code-quality.md
 ├── templates/                         # Project bootstrap templates
 │   ├── CLAUDE.md
 │   ├── PROJECT_SCOPE.md
+│   ├── TASKLIST.md
 │   ├── CHANGELOG.md
 │   ├── DECISIONS.md
 │   └── KNOWN_ISSUES.md
