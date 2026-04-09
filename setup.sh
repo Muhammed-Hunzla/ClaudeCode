@@ -16,7 +16,7 @@
 #   2.  Claude Code CLI
 #   3.  Custom personal skills (explain-code, debug-helper, test-writer)
 #   4.  8 plugin marketplaces
-#   5.  123+ plugins across all categories
+#   5.  133+ plugins across all categories
 #   6.  CLAUDE.md (user-level config router)
 #   7.  5 rule modules (rules/)
 #   8.  6 project templates (templates/)
@@ -1944,6 +1944,20 @@ cat > "$CLAUDE_DIR/.mcp.json" << 'MCPEOF'
       }
     },
 
+    "______________________________MARKETING_FUNNELS______________________________": {},
+
+    "systeme-io": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@ivotoby/openapi-mcp-server",
+        "--api-base-url",
+        "https://api.systeme.io/api",
+        "--headers",
+        "X-API-Key:hboy21nb9z3crvn1a9hozjcmj9sv85caxdzufj61fxhjgf0gj9umgh2dqnpa3cuf"
+      ]
+    },
+
     "______________________________MARKETING_ADS______________________________": {},
 
     "google-ads": {
@@ -2252,9 +2266,9 @@ echo -e "${BOLD}${GREEN}║         Claude Code Setup Complete!                 
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  OS           : ${BOLD}${OS}${RESET}"
-echo -e "  Plugins      : 123+ marketplace + 3 local (autopilot, orchestration, workflow)"
+echo -e "  Plugins      : 133+ marketplace + 3 local (autopilot, orchestration, workflow)"
 echo -e "  Skills       : 3 custom (explain-code · debug-helper · test-writer)"
-echo -e "  Marketplaces : 8"
+echo -e "  Marketplaces : 18"
 echo -e "  MCP servers  : 40+ (CRM · sales · outreach · automation · scraping · ads · payments)"
 echo -e "  Rules        : 4 modules (project-standards · maintenance · workflow · code-quality)"
 echo -e "  Templates    : 5 (CLAUDE.md · PROJECT_SCOPE · CHANGELOG · DECISIONS · KNOWN_ISSUES)"
