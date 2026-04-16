@@ -1,6 +1,6 @@
 # Claude Code Environment Setup
 
-One-script setup that restores a complete Claude Code development environment on any machine. Installs the CLI, 123+ plugins across 8 marketplaces, a model router, custom skills, governance rules, project templates, hooks, and 40+ MCP servers for CRM, sales, outreach, and automation.
+One-script setup that restores a complete Claude Code development environment on any machine. Installs the CLI, 123+ plugins across 9 marketplaces, a model router, custom skills, governance rules, project templates, hooks, and 40+ MCP servers for CRM, sales, outreach, and automation.
 
 ## Prerequisites
 
@@ -88,7 +88,7 @@ Cloned from GitHub:
 - [claude-orchestration](https://github.com/mbruhler/claude-orchestration) -- N8N-like workflow orchestration
 - [claude-code-workflow-orchestration](https://github.com/barkain/claude-code-workflow-orchestration) -- Hook-based task delegation
 
-### 10. Plugin Marketplaces (8) & 123+ Plugins
+### 10. Plugin Marketplaces (9) & 123+ Plugins
 
 **Marketplaces added:**
 
