@@ -1470,6 +1470,7 @@ add_marketplace() {
     && success "$label" || fail "$label"
 }
 
+add_marketplace "anthropics/claude-plugins-official"                   "claude-plugins-official"
 add_marketplace "agiprolabs/claude-trading-skills"                     "agiprolabs-claude-trading-skills"
 add_marketplace "kivilaid/plugin-marketplace"                          "ando-marketplace"
 add_marketplace "jeremylongshore/claude-code-plugins-plus-skills"      "claude-code-plugins-plus"
