@@ -1103,6 +1103,188 @@ EOF
 success "/release"
 
 # =============================================================================
+# 7b. GOVERNANCE HOOKS
+# Enforces ~/.claude/rules/maintenance.md — keeps .claude/ governance files
+# (CHANGELOG, PROJECT_SCOPE, TASKLIST, DECISIONS, KNOWN_ISSUES) up to date
+# and auto-bootstraps them in any new project.
+# =============================================================================
+log "Writing governance hook scripts..."
+
+mkdir -p "$CLAUDE_DIR/hooks"
+
+cat > "$CLAUDE_DIR/hooks/governance-check.sh" << 'HOOK_EOF'
+#!/usr/bin/env bash
+# governance-check.sh — enforces ~/.claude/rules/maintenance.md
+# Runs at Stop to verify all 5 governance files exist and are reasonably fresh.
+# Also prints a reminder listing all 5 files.
+
+set -u
+
+GOV_FILES=(
+  "CHANGELOG.md"
+  "PROJECT_SCOPE.md"
+  "TASKLIST.md"
+  "DECISIONS.md"
+  "KNOWN_ISSUES.md"
+)
+
+# Only check if we're in a project with a .claude/ directory
+if [ ! -d .claude ]; then
+  exit 0
+fi
+
+MISSING=()
+for f in "${GOV_FILES[@]}"; do
+  if [ ! -f ".claude/$f" ]; then
+    MISSING+=("$f")
+  fi
+done
+
+echo ""
+echo "[GOVERNANCE CHECK — ~/.claude/rules/maintenance.md]"
+echo "Before declaring this task done, confirm ALL 5 governance files were reviewed/updated:"
+echo "  [ ] .claude/CHANGELOG.md      — logged what changed under [Unreleased]?"
+echo "  [ ] .claude/PROJECT_SCOPE.md  — updated Current State / In Progress / Next Priorities?"
+echo "  [ ] .claude/TASKLIST.md       — marked completed [x] with (completed YYYY-MM-DD)?"
+echo "  [ ] .claude/DECISIONS.md      — logged any architectural/design decisions?"
+echo "  [ ] .claude/KNOWN_ISSUES.md   — added new issues / removed resolved ones?"
+
+if [ ${#MISSING[@]} -gt 0 ]; then
+  echo ""
+  echo "[WARN] Missing governance files (create from ~/.claude/templates/ now):"
+  for m in "${MISSING[@]}"; do
+    echo "  - .claude/$m"
+  done
+fi
+
+echo ""
+echo "If any of these weren't updated — do it NOW before claiming done. NO EXCEPTIONS."
+exit 0
+HOOK_EOF
+
+cat > "$CLAUDE_DIR/hooks/governance-staleness.sh" << 'HOOK_EOF'
+#!/usr/bin/env bash
+# governance-staleness.sh — PostToolUse hook after Edit/Write
+# Warns when code files are being modified but governance files haven't been touched.
+# Runs once per invocation; non-blocking reminder only.
+
+set -u
+
+# Skip unless .claude/ exists in cwd
+[ -d .claude ] || exit 0
+
+# Find any non-governance file modified in the last 5 minutes
+RECENT_CODE=$(find . \
+  -type f \
+  -mmin -5 \
+  -not -path "*/.git/*" \
+  -not -path "*/.claude/*" \
+  -not -path "*/node_modules/*" \
+  -not -path "*/.venv/*" \
+  -not -path "*/dist/*" \
+  -not -path "*/build/*" \
+  2>/dev/null | head -1)
+
+[ -z "$RECENT_CODE" ] && exit 0
+
+# Check if ANY governance file was touched in the last 10 minutes
+GOV_TOUCHED=$(find .claude \
+  -maxdepth 1 \
+  -type f \
+  -name "*.md" \
+  -mmin -10 \
+  2>/dev/null | head -1)
+
+if [ -z "$GOV_TOUCHED" ]; then
+  echo ""
+  echo "[GOVERNANCE REMINDER] Code files modified recently but no governance file has been touched."
+  echo "Per ~/.claude/rules/maintenance.md — update relevant files BEFORE declaring done:"
+  echo "  .claude/CHANGELOG.md, PROJECT_SCOPE.md, TASKLIST.md, DECISIONS.md, KNOWN_ISSUES.md"
+fi
+
+exit 0
+HOOK_EOF
+
+cat > "$CLAUDE_DIR/hooks/project-bootstrap.sh" << 'HOOK_EOF'
+#!/usr/bin/env bash
+# project-bootstrap.sh — SessionStart hook
+# Auto-creates .claude/ governance files if missing in a project directory.
+# Copies from ~/.claude/templates/ so the 5 governance files always exist
+# and can be kept up to date. Claude then populates them via onboarding flow.
+
+set -u
+
+TEMPLATES_DIR="$HOME/.claude/templates"
+PROJECT_CLAUDE_DIR=".claude"
+
+# Only run in what looks like a project root:
+#   - Has .git/, OR
+#   - Has common project manifest (package.json, pyproject.toml, Cargo.toml, go.mod, Gemfile, pom.xml, setup.sh), OR
+#   - Is the user's HOME — in which case SKIP (avoid bootstrapping $HOME)
+if [ "$(pwd)" = "$HOME" ]; then
+  exit 0
+fi
+
+IS_PROJECT=0
+[ -d .git ] && IS_PROJECT=1
+for manifest in package.json pyproject.toml Cargo.toml go.mod Gemfile pom.xml build.gradle setup.sh; do
+  [ -f "$manifest" ] && IS_PROJECT=1
+done
+
+[ "$IS_PROJECT" -eq 0 ] && exit 0
+
+# Templates must exist
+[ -d "$TEMPLATES_DIR" ] || exit 0
+
+CREATED=()
+
+# Create .claude/ if missing
+if [ ! -d "$PROJECT_CLAUDE_DIR" ]; then
+  mkdir -p "$PROJECT_CLAUDE_DIR"
+  CREATED+=(".claude/ (directory)")
+fi
+
+# Copy each governance template if missing (never overwrite)
+for f in PROJECT_SCOPE.md CHANGELOG.md TASKLIST.md DECISIONS.md KNOWN_ISSUES.md; do
+  src="$TEMPLATES_DIR/$f"
+  dst="$PROJECT_CLAUDE_DIR/$f"
+  if [ -f "$src" ] && [ ! -f "$dst" ]; then
+    cp "$src" "$dst"
+    CREATED+=(".claude/$f")
+  fi
+done
+
+# Copy root CLAUDE.md template if missing
+if [ -f "$TEMPLATES_DIR/CLAUDE.md" ] && [ ! -f "CLAUDE.md" ]; then
+  cp "$TEMPLATES_DIR/CLAUDE.md" "CLAUDE.md"
+  CREATED+=("CLAUDE.md (router)")
+fi
+
+if [ ${#CREATED[@]} -gt 0 ]; then
+  echo ""
+  echo "[AUTO-BOOTSTRAP] Created missing governance files from ~/.claude/templates/:"
+  for c in "${CREATED[@]}"; do
+    echo "  + $c"
+  done
+  echo ""
+  echo "[ACTION REQUIRED] These files contain TEMPLATE PLACEHOLDERS."
+  echo "Per ~/.claude/rules/project-onboarding.md — run the onboarding flow NOW:"
+  echo "  1. Ask the user for project context (PRD, docs, status, priorities)"
+  echo "  2. Audit the codebase"
+  echo "  3. Populate CLAUDE.md + .claude/*.md with real project state (not template text)"
+  echo "  4. Confirm scope with the user before implementation"
+fi
+
+exit 0
+HOOK_EOF
+
+chmod +x "$CLAUDE_DIR/hooks/governance-check.sh" \
+         "$CLAUDE_DIR/hooks/governance-staleness.sh" \
+         "$CLAUDE_DIR/hooks/project-bootstrap.sh"
+
+success "3 governance hooks (check, staleness, bootstrap)"
+
+# =============================================================================
 # 8. MEMORY
 # =============================================================================
 step "8/16  Memory"

@@ -208,13 +208,18 @@ Intelligent model selector that auto-routes queries to the optimal Claude model:
 
 Runs on `http://localhost:3131`. Supports both Node.js and Python implementations. Auto-starts via launchd (macOS) or VBS (Windows).
 
-### 13. Hooks (4)
+### 13. Hooks (7)
 | Hook | Trigger | Action |
 |---|---|---|
 | `Notification` | Claude needs attention | macOS/Windows system notification |
-| `Stop` | Session ending | Reminds to update CHANGELOG + PROJECT_SCOPE |
-| `UserPromptSubmit` | Every prompt | Checks for PROJECT_SCOPE.md |
-| `SessionEnd` | Session closes | Runs `sync-setup.sh` to keep setup.sh in sync |
+| `Stop` (base) | Session ending | Verification checklist — confirms tests/build/lint ran |
+| `Stop` (governance-check.sh) | Session ending | Lists **all 5 governance files** (CHANGELOG, PROJECT_SCOPE, TASKLIST, DECISIONS, KNOWN_ISSUES) and warns about any missing |
+| `PostToolUse` (governance-staleness.sh) | After Write/Edit/MultiEdit | Warns when code was modified but no governance file has been touched in 10 min |
+| `SessionStart` (project-bootstrap.sh) | Session start | **Auto-creates `.claude/` + 6 governance files from `~/.claude/templates/`** if missing in a detected project root (has `.git/` or a manifest like `package.json`). Never overwrites. |
+| `UserPromptSubmit` | Every prompt | Checks for `.claude/PROJECT_SCOPE.md`, emits workflow reminder |
+| `SessionEnd` | Session closes | Runs `sync-setup.sh` to keep `setup.sh` in sync with `~/.claude/` |
+
+**Governance enforcement**: The combination of `project-bootstrap.sh` (auto-create), `governance-staleness.sh` (mid-session reminder), and `governance-check.sh` (pre-completion checklist) guarantees that every project — new or existing — has the 5 governance files and they're kept current. Rule source: `~/.claude/rules/maintenance.md`.
 
 ### 14. CodexBar (macOS only)
 Menu bar usage monitor installed via Homebrew.

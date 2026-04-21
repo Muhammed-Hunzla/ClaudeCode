@@ -141,6 +141,18 @@ if os.path.isdir(skills_dir):
                 "SKILL")
 
 # =========================================================================
+# 5b. SYNC GOVERNANCE HOOKS
+# =========================================================================
+
+print("[sync-setup] Checking governance hooks...")
+for hook_name in ["governance-check.sh", "governance-staleness.sh", "project-bootstrap.sh"]:
+    hook_path = os.path.join(CLAUDE_DIR, "hooks", hook_name)
+    if os.path.isfile(hook_path):
+        content = sync_file(content, hook_path,
+            rf'cat > "\$CLAUDE_DIR/hooks/{re.escape(hook_name)}" << \'HOOK_EOF\'',
+            "HOOK_EOF")
+
+# =========================================================================
 # 6. SYNC MCP SERVERS (.mcp.json)
 # =========================================================================
 

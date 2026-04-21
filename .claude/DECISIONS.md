@@ -7,6 +7,25 @@ Purpose: prevent revisiting settled decisions and provide context for future cha
 
 ## Decision Log
 
+### [DECISION-005] — Auto-bootstrap governance files from templates on SessionStart
+
+**Date**: 2026-04-22
+**Status**: Accepted
+
+**Context**
+Previously, if a project was missing `.claude/*.md` files, Claude could remember the rule but couldn't update files that didn't exist. The onboarding rule required asking the user first — but asking doesn't help if nothing exists to be updated during the session. Result: new projects stayed ungoverned until someone manually bootstrapped them.
+
+**Decision**
+Add a SessionStart hook (`~/.claude/hooks/project-bootstrap.sh`) that auto-copies all 6 governance templates (CLAUDE.md + 5 `.claude/*.md`) from `~/.claude/templates/` into any detected project directory (has `.git/` or a manifest file) when missing. Never overwrites existing files. Emits an `[ACTION REQUIRED]` notice telling Claude to populate the placeholders via the onboarding flow.
+
+**Consequences**
+- Every project now has the 6 files ready to be updated from day one.
+- The onboarding rule ("ask the user first") still applies for POPULATING the files — not for their physical existence.
+- Risk: template placeholders could be mistaken for real project state if the onboarding flow is skipped. Mitigated by the `[ACTION REQUIRED]` message and the staleness hook that continues to remind about updates.
+- Bootstrap is idempotent — re-running adds nothing if files already exist.
+
+---
+
 ### [DECISION-004] — Governance hook scripts live in `~/.claude/hooks/` (not inline in settings.json)
 
 **Date**: 2026-04-21

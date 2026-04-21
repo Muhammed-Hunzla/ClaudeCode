@@ -9,9 +9,9 @@
 
 | Status | Count |
 |---|---|
-| Completed | 14 |
-| In Progress | 1 |
-| Pending | 3 |
+| Completed | 18 |
+| In Progress | 0 |
+| Pending | 1 |
 | Blocked | 0 |
 
 ---
@@ -32,21 +32,21 @@
 - [x] Configure auto-update README on file changes via hook (completed 2026-04-17)
 - [x] Strengthen Stop hook — cover all 5 governance files via `governance-check.sh` (completed 2026-04-21)
 - [x] Add PostToolUse staleness-check hook via `governance-staleness.sh` (completed 2026-04-21)
+- [x] Bootstrap `.claude/` directory for this project with all 6 files (completed 2026-04-21)
+- [x] Add `~/.claude/hooks/project-bootstrap.sh` + SessionStart hook — auto-creates governance files in any project (completed 2026-04-22)
+- [x] Sync all 3 governance hooks (check, staleness, bootstrap) into `setup.sh` as section "7b. GOVERNANCE HOOKS" (completed 2026-04-22)
+- [x] Extend `sync-setup.sh` with Section 5b to sync hook scripts on future changes (completed 2026-04-22)
+- [x] Update README.md Hooks section from 4 → 7 hooks with governance enforcement rationale (completed 2026-04-22)
 
 ---
 
 ## In Progress
 
-- [ ] Bootstrap `.claude/` directory for this project with all 6 files [high] — nearly done, finalizing DECISIONS + KNOWN_ISSUES + root CLAUDE.md
+_Nothing in progress._
 
 ---
 
 ## Pending Tasks
-
-### High Priority
-
-- [ ] Sync new governance hooks (`governance-check.sh`, `governance-staleness.sh`) into `setup.sh` via `sync-setup.sh` so they propagate to new installs
-- [ ] Update README.md to document the governance-check and governance-staleness hooks under a new Hooks section
 
 ### Medium Priority
 

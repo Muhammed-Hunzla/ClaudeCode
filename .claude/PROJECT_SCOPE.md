@@ -24,7 +24,7 @@
 
 ## In Progress
 
-- [governance bootstrap] — Creating `.claude/` directory for this project with all 5 required files (was previously missing, hence nothing was being updated)
+_Nothing in progress. Governance auto-bootstrap is live — any new project gets `.claude/` + 6 files on SessionStart via `project-bootstrap.sh`._
 
 ---
 
@@ -39,9 +39,8 @@ _Summary only — details in `.claude/KNOWN_ISSUES.md`._
 
 ## Next Priorities
 
-1. Ensure the strengthened Stop hook + PostToolUse staleness hook are reflected in `setup.sh` via `sync-setup.sh` so they propagate to new installs.
-2. Consider adding a `setup.sh` step that seeds the `~/.claude/templates/` + `~/.claude/rules/` updates automatically (already done — verify current).
-3. Document the governance-check and governance-staleness hooks in README under Hooks section.
+1. Add a `setup.sh` verification step: print a "health check" of installed counts after install completes.
+2. Consider a project-level `.claude/settings.json` that extends user-level hooks with project-specific enforcement.
 
 ---
 
