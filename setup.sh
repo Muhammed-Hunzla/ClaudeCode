@@ -272,6 +272,7 @@ Do not define rules here — link to them.
 | Code Quality | [rules/code-quality.md](rules/code-quality.md) | Single source of truth, naming, DRY principles |
 | Onboarding | [rules/project-onboarding.md](rules/project-onboarding.md) | Project intake flow, user input, task list creation & tracking |
 | Graphify | [rules/graphify.md](rules/graphify.md) | Auto-build/refresh `.planning/graphs/` knowledge graph for every GSD project |
+| Tooling Awareness | [rules/tooling-awareness.md](rules/tooling-awareness.md) | Use installed skills/plugins/MCPs/agents on every project — never roll-your-own when a tool fits |
 
 ---
 
@@ -284,6 +285,7 @@ Do not define rules here — link to them.
 - **One source of truth**: Never duplicate constants, configs, or state. Define once, reference everywhere.
 - **Always verify**: Never claim a task is done without running the verification command and reading the output.
 - **GSD project detected**: If `.planning/` exists and graphify is enabled, run `/gsd-graphify build` whenever the SessionStart hook flags missing/stale graph.
+- **Tooling audit**: Read the `[TOOLING AUDIT]` block at every session start — those listed skills/plugins/MCPs/agents are the project's default toolbox. Prefer them over writing from scratch.
 
 ---
 
@@ -784,6 +786,80 @@ The hook handles this check — you don't need to compute it manually.
 The knowledge graph is the difference between answering "what files reference this decision?" in 30 seconds vs. 30 minutes. Skipping it costs you (and the user) real time on every cross-phase question. The hook makes it free — there's no excuse to ignore it.
 EOF
 success "graphify.md"
+
+cat > "$CLAUDE_DIR/rules/tooling-awareness.md" << 'EOF'
+# Tooling Awareness — Use What Is Installed
+
+## What This Is
+
+The user has hundreds of skills, plugins, MCPs, and agents installed at the user level. **They are not for showcase.** Every project must actively use the tools that are appropriate for its stack and domain instead of writing equivalent code from scratch.
+
+Skipping a relevant tool to roll your own is a defect — it costs the user time, produces lower-quality output, and wastes the install.
+
+## When to Use
+
+### Automatic — at every session start
+
+The `~/.claude/hooks/tooling-recommender.sh` SessionStart hook runs every session. It:
+
+1. Detects the project's tech stack from manifests (`package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `Package.swift`, `*.xcodeproj`, etc.)
+2. Inspects key dependency keywords (react, next, vue, fastapi, django, tailwind, solana, web3, langchain, anthropic, openai, pytorch, tensorflow, prisma, playwright, etc.)
+3. Detects domain markers (`.planning/` → GSD, `.ipynb` → ML notebooks, `Dockerfile` → containerized, `.github/workflows/` → CI)
+4. Prints a `[TOOLING AUDIT]` block listing the **specific** skills/plugins/MCPs/agents that are likely useful for this project
+
+When you see the audit block, treat it as a **load-bearing context input** — read it before planning, and prefer those tools when the next task lands in their domain.
+
+### Before any implementation task
+
+Before writing custom code for a task:
+
+1. **Search the audit list** — does any listed tool already cover this?
+2. **Search the available-skills list** in your system prompt — anything relevant there?
+3. **Search MCPs** — is there an authenticated server (GitHub, Playwright, Context7, Serena, CCXT, CoinGecko, etc.) that already does this?
+4. **Search agents** — is there a specialist agent (`backend-architect`, `frontend-design`, `python-pro`, `ai-engineer`, `tdd-orchestrator`, `code-reviewer`, etc.) that fits?
+
+Only roll your own when **no tool fits** — and say so explicitly: "No installed tool covers X, writing from scratch."
+
+## Categories — what to reach for
+
+| Domain | Reach for |
+|---|---|
+| **React/Next/Tailwind** | `/react-best-practices`, `/react-composition-patterns`, `/tailwind-v4-shadcn`, `/frontend-design`, `/aceternity-ui`, `/mobile-first-design` |
+| **Vue/Nuxt** | `/inspira-ui`, `/shadcn-vue` |
+| **Python (general)** | `/python-development`, `python-pro` agent, `/python-testing-patterns`, `/uv-package-manager`, `/async-python-patterns`, pyright-lsp |
+| **FastAPI** | `/fastapi` (endpoint, module, dto, migrate-create), `fastapi-pro` agent |
+| **Django** | `django-pro` agent |
+| **TypeScript** | typescript-lsp (auto), Context7 for lib docs |
+| **Go / Kotlin / Swift** | gopls-lsp, kotlin-lsp, swift-lsp, `/developing-ios-apps` |
+| **AI / LLM apps** | `/langchain-architecture`, `/rag-implementation`, `/prompt-engineering-patterns`, `/llm-evaluation`, `ai-engineer` agent, `prompt-engineer` agent |
+| **ML / Data Science** | `/ml-model-training`, `/ml-pipeline-automation`, `ml-engineer`, `mlops-engineer`, `data-scientist` agents |
+| **Web3 / Solana / DeFi** | `/trading-skills/*` (defillama-api, dexscreener-api, jupiter, jito-bundles, helius-api, solana-rpc, pumpfun-mechanics), `/find-arbitrage`, `/track-wallet`, `/monitor-whales`, `/analyze-on-chain` |
+| **Testing** | `/generate-e2e`, `/unit-test-generator`, `/automating-api-testing`, `test-automator` agent, `/test-fixing` |
+| **Performance** | `/detect-bottlenecks`, `/profile-queries`, `/detect-leaks`, `/python-performance-optimization` |
+| **Code review** | `code-reviewer` agent, `/review-pr`, `/code-review`, `/security-review` |
+| **Architecture** | `architect-review` agent, `backend-architect` agent, `/architecture-patterns`, `/microservices-patterns`, `/api-design-principles` |
+| **Docs** | `/init` (CLAUDE.md), `/claude-md-improver`, `/explain-code` |
+| **GSD workflow** | `/gsd-*` family (plan-phase, execute-phase, graphify, ship, verify-work, etc.) |
+| **Memory** | `mcp__plugin_claude-mem_mcp-search__*` for cross-session memory; `/mem-search` skill |
+| **Library docs** | Context7 MCP — `/resolve-library-id` then `/query-docs` (always for unfamiliar APIs) |
+| **Browser automation** | Playwright MCP (headed mode per workflow rules) |
+| **GitHub** | GitHub MCP (`mcp__plugin_github_github__*`) — never roll-your-own with `gh` if MCP works |
+| **Crypto market data** | CCXT MCP, CoinGecko MCP |
+
+## Rules
+
+- **Read the audit at session start.** It's not noise — it's the shortlist for the project.
+- **Prefer specialized tools over inline code.** If a skill exists, invoke it via the `Skill` tool. If a plugin slash-command exists, run it. If an agent fits, dispatch it.
+- **Check Context7 for any library question.** Don't trust training data on library APIs — fetch current docs.
+- **Use MCPs over CLI shelling** when both work — MCPs are typed and validated.
+- **Don't recommend tools that are not installed.** Only suggest from the audit + available-skills list.
+- **When you skip a tool, say why** — "no installed tool covers X" or "tool Y exists but doesn't fit because Z."
+
+## Why
+
+The setup script installs 9 marketplaces, 123+ plugins, 40+ MCP servers, and dozens of skills/agents. That investment pays back only when Claude treats them as the default toolbox. Writing custom React without `/react-best-practices`, custom RAG without `/rag-implementation`, custom Solana code without `trading-skills/solana-rpc` — these are wastes of an already-paid cost. The hook + rule together make the cost-amortization automatic.
+EOF
+success "tooling-awareness.md"
 
 # =============================================================================
 # 6. TEMPLATES
@@ -1451,12 +1527,230 @@ fi
 exit 0
 HOOK_EOF
 
+cat > "$CLAUDE_DIR/hooks/tooling-recommender.sh" << 'HOOK_EOF'
+#!/usr/bin/env bash
+# tooling-recommender.sh — SessionStart hook
+# Detects the project's tech stack and prints a curated list of installed
+# skills / plugins / MCPs / agents that are likely useful for this project.
+# Per ~/.claude/rules/tooling-awareness.md.
+#
+# Silent (no output) when:
+#   - At $HOME (not a project)
+#   - No project manifest detected
+#
+# Output format:
+#   [TOOLING AUDIT] Detected stack: <stack list>
+#     • <category>: <comma-separated tools>
+#     ...
+#   Use these tools instead of writing from scratch.
+#   Per ~/.claude/rules/tooling-awareness.md
+
+set -u
+
+[ "$(pwd)" = "$HOME" ] && exit 0
+
+# Detect project root signals
+HAS_PROJECT=0
+[ -d .git ] && HAS_PROJECT=1
+for m in package.json pyproject.toml requirements.txt setup.py Pipfile Cargo.toml go.mod Gemfile pom.xml build.gradle build.gradle.kts Package.swift; do
+  [ -f "$m" ] && HAS_PROJECT=1
+done
+# .xcodeproj is a directory
+ls -d -- *.xcodeproj 2>/dev/null | head -n 1 | grep -q . && HAS_PROJECT=1
+[ "$HAS_PROJECT" -eq 0 ] && exit 0
+
+STACK=()
+SUGGESTIONS=()
+
+# Helper: case-insensitive grep across multiple files (any of)
+grep_any() {
+  local pattern="$1"; shift
+  for f in "$@"; do
+    [ -f "$f" ] && grep -qiE "$pattern" "$f" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+# ---------- Python ----------
+if [ -f pyproject.toml ] || [ -f requirements.txt ] || [ -f setup.py ] || [ -f Pipfile ]; then
+  STACK+=("Python")
+  SUGGESTIONS+=("Python core: /python-development, /python-testing-patterns, /uv-package-manager, /async-python-patterns, python-pro agent, pyright-lsp")
+
+  if grep_any 'fastapi' pyproject.toml requirements.txt Pipfile setup.py; then
+    STACK+=("FastAPI")
+    SUGGESTIONS+=("FastAPI: /fastapi (module/endpoint/dto/migrate-create), fastapi-pro agent")
+  fi
+  if grep_any 'django' pyproject.toml requirements.txt Pipfile setup.py; then
+    STACK+=("Django")
+    SUGGESTIONS+=("Django: django-pro agent")
+  fi
+  if grep_any 'flask' pyproject.toml requirements.txt Pipfile setup.py; then
+    STACK+=("Flask")
+    SUGGESTIONS+=("Flask: backend-architect agent, /api-design-principles")
+  fi
+  if grep_any '(torch|tensorflow|scikit-learn|pandas|numpy|jupyter|polars)' pyproject.toml requirements.txt Pipfile setup.py; then
+    STACK+=("ML/Data")
+    SUGGESTIONS+=("ML: /ml-model-training, /ml-pipeline-automation, ml-engineer + data-scientist + mlops-engineer agents")
+  fi
+  if grep_any '(langchain|anthropic|openai|llama-index)' pyproject.toml requirements.txt Pipfile setup.py; then
+    STACK+=("LLM-app")
+    SUGGESTIONS+=("LLM: /langchain-architecture, /rag-implementation, /prompt-engineering-patterns, /llm-evaluation, ai-engineer + prompt-engineer agents, claude-api skill")
+  fi
+fi
+
+# ---------- JavaScript / TypeScript ----------
+if [ -f package.json ]; then
+  STACK+=("JS")
+  if [ -f tsconfig.json ]; then
+    STACK+=("TS")
+    SUGGESTIONS+=("TypeScript: typescript-lsp (auto)")
+  fi
+
+  # Frameworks
+  if grep -qE '"react"' package.json 2>/dev/null; then
+    STACK+=("React")
+    SUGGESTIONS+=("React: /react-best-practices, /react-composition-patterns, /frontend-design, /aceternity-ui")
+  fi
+  if grep -qE '"next"' package.json 2>/dev/null; then
+    STACK+=("Next.js")
+    SUGGESTIONS+=("Next.js: /react-best-practices (Vercel guide), /nextjs (skill if available)")
+  fi
+  if grep -qE '"vue"|"nuxt"' package.json 2>/dev/null; then
+    STACK+=("Vue/Nuxt")
+    SUGGESTIONS+=("Vue: /inspira-ui, /shadcn-vue")
+  fi
+  if grep -qE '"tailwindcss"' package.json 2>/dev/null; then
+    STACK+=("Tailwind")
+    SUGGESTIONS+=("Tailwind: /tailwind-v4-shadcn, /mobile-first-design, /responsive-web-design, /design-system-creation")
+  fi
+  if grep -qE '"@radix-ui|"shadcn"' package.json 2>/dev/null; then
+    SUGGESTIONS+=("shadcn/Radix: /tailwind-v4-shadcn (covers shadcn install + theming)")
+  fi
+
+  # Backend
+  if grep -qE '"express"|"fastify"|"hono"|"nestjs"' package.json 2>/dev/null; then
+    STACK+=("Node-backend")
+    SUGGESTIONS+=("Node API: backend-architect agent, /api-design-principles, /architecture-patterns")
+  fi
+  if grep -qE '"prisma"|"drizzle-orm"|"sequelize"|"typeorm"' package.json 2>/dev/null; then
+    SUGGESTIONS+=("ORM: backend-architect agent for schema review, Context7 MCP for ORM docs")
+  fi
+  if grep -qE '"graphql"|"@apollo"' package.json 2>/dev/null; then
+    SUGGESTIONS+=("GraphQL: graphql-architect agent, /building-graphql-server")
+  fi
+
+  # Testing
+  if grep -qE '"playwright"' package.json 2>/dev/null; then
+    SUGGESTIONS+=("Playwright: Playwright MCP (headed mode per workflow rules), /generate-e2e")
+  fi
+  if grep -qE '"jest"|"vitest"|"mocha"' package.json 2>/dev/null; then
+    SUGGESTIONS+=("Unit testing: /unit-test-generator, test-automator agent")
+  fi
+  if grep -qE '"cypress"' package.json 2>/dev/null; then
+    SUGGESTIONS+=("Cypress: /generate-e2e, /running-e2e-tests")
+  fi
+
+  # AI/LLM in JS
+  if grep -qE '"@anthropic-ai/sdk"|"openai"|"langchain"|"ai"' package.json 2>/dev/null; then
+    STACK+=("LLM-app")
+    SUGGESTIONS+=("LLM (JS): claude-api skill, /langchain-architecture, /rag-implementation, ai-engineer agent")
+  fi
+
+  # Web3
+  if grep -qiE '"@solana|"@coral-xyz|"web3"|"ethers"|"viem"|"wagmi"|"@alchemy"' package.json 2>/dev/null; then
+    STACK+=("Web3")
+  fi
+
+  # Mobile
+  if grep -qE '"react-native"|"expo"' package.json 2>/dev/null; then
+    STACK+=("React-Native")
+    SUGGESTIONS+=("Mobile: /mobile-test, /testing-mobile-apps, /mobile-first-design")
+  fi
+fi
+
+# ---------- Web3 / Crypto / DeFi (cross-language) ----------
+if [[ " ${STACK[*]:-} " == *" Web3 "* ]] \
+   || grep_any '(^|[^a-z])(solana|web3|ethers|viem|jito|helius|raydium|alchemy-sdk|@alch|pumpfun|pump-fun|pump\.fun)([^a-z]|$)' pyproject.toml requirements.txt Pipfile setup.py 2>/dev/null \
+   || ls -d programs/ 2>/dev/null | grep -q .; then
+  [[ " ${STACK[*]:-} " != *" Web3 "* ]] && STACK+=("Web3")
+  SUGGESTIONS+=("Crypto/Solana: trading-skills suite (defillama-api, dexscreener-api, helius-api, solana-rpc, jito-bundles, pumpfun-mechanics), /find-arbitrage, /track-wallet, /monitor-whales, /analyzing-on-chain-data, CCXT MCP, CoinGecko MCP")
+fi
+
+# ---------- iOS / Swift ----------
+if ls -d -- *.xcodeproj 2>/dev/null | grep -q . || [ -f Package.swift ]; then
+  STACK+=("Swift/iOS")
+  SUGGESTIONS+=("iOS: /developing-ios-apps, swift-lsp")
+fi
+
+# ---------- Go ----------
+if [ -f go.mod ]; then
+  STACK+=("Go")
+  SUGGESTIONS+=("Go: gopls-lsp, backend-architect agent")
+fi
+
+# ---------- JVM (Kotlin/Java) ----------
+if [ -f build.gradle ] || [ -f build.gradle.kts ] || [ -f pom.xml ]; then
+  STACK+=("JVM")
+  SUGGESTIONS+=("JVM: kotlin-lsp")
+fi
+
+# ---------- Rust ----------
+if [ -f Cargo.toml ]; then
+  STACK+=("Rust")
+  SUGGESTIONS+=("Rust: Context7 MCP for crate docs, backend-architect agent")
+fi
+
+# ---------- Notebooks (data/ML) ----------
+if find . -maxdepth 3 -name '*.ipynb' -not -path '*/node_modules/*' -not -path '*/.venv/*' 2>/dev/null | head -n 1 | grep -q .; then
+  STACK+=("Notebooks")
+  SUGGESTIONS+=("Notebooks: data-scientist agent, /viz-data, /forecast-ts, /detect-anomaly")
+fi
+
+# ---------- Docker / DevOps ----------
+if [ -f Dockerfile ] || [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
+  STACK+=("Docker")
+  SUGGESTIONS+=("DevOps: mlops-engineer agent (if ML), backend-architect agent for service boundaries")
+fi
+if [ -d .github/workflows ]; then
+  STACK+=("CI")
+  SUGGESTIONS+=("CI: code-reviewer agent for PR review, /security-review")
+fi
+
+# ---------- GSD ----------
+if [ -d .planning ]; then
+  STACK+=("GSD")
+  SUGGESTIONS+=("GSD workflow: /gsd-progress, /gsd-plan-phase, /gsd-execute-phase, /gsd-graphify, /gsd-ship, /gsd-verify-work")
+fi
+
+# ---------- Universal recommendations (always-on for any project) ----------
+SUGGESTIONS+=("Universal: Context7 MCP (any unfamiliar lib), Serena MCP (symbol-aware code nav), claude-mem mem-search (prior session context), code-reviewer agent before commit")
+
+# ---------- Output ----------
+# We're guaranteed to be in a project (HAS_PROJECT=1) — always print at least
+# the universal recommendations. STACK may be empty for tooling/scripts repos.
+echo ""
+if [ ${#STACK[@]} -gt 0 ]; then
+  echo "[TOOLING AUDIT] Detected stack: ${STACK[*]}"
+else
+  echo "[TOOLING AUDIT] Project detected (no recognised language manifest) — universal tools below"
+fi
+for s in "${SUGGESTIONS[@]}"; do
+  echo "  • $s"
+done
+echo ""
+echo "Use these tools instead of writing from scratch."
+echo "Per ~/.claude/rules/tooling-awareness.md — installed tools are not for showcase."
+
+exit 0
+HOOK_EOF
+
 chmod +x "$CLAUDE_DIR/hooks/governance-check.sh" \
          "$CLAUDE_DIR/hooks/governance-staleness.sh" \
          "$CLAUDE_DIR/hooks/project-bootstrap.sh" \
-         "$CLAUDE_DIR/hooks/graphify-check.sh"
+         "$CLAUDE_DIR/hooks/graphify-check.sh" \
+         "$CLAUDE_DIR/hooks/tooling-recommender.sh"
 
-success "4 governance hooks (check, staleness, bootstrap, graphify)"
+success "5 governance hooks (check, staleness, bootstrap, graphify, tooling)"
 
 # =============================================================================
 # 8. MEMORY
@@ -2466,7 +2760,8 @@ settings = {
     }],
     'SessionStart': [
       {'hooks': [{'type': 'command', 'command': 'bash $HOME/.claude/hooks/project-bootstrap.sh'}]},
-      {'hooks': [{'type': 'command', 'command': 'bash $HOME/.claude/hooks/graphify-check.sh'}]}
+      {'hooks': [{'type': 'command', 'command': 'bash $HOME/.claude/hooks/graphify-check.sh'}]},
+      {'hooks': [{'type': 'command', 'command': 'bash $HOME/.claude/hooks/tooling-recommender.sh'}]}
     ]
   },
   'enabledPlugins': {

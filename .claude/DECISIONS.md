@@ -123,4 +123,27 @@ Staleness is computed by the hook (not Claude), so the trigger is consistent acr
 
 ---
 
+### [DECISION-007] — Per-project tooling awareness via stack-detection hook
+
+**Date**: 2026-04-29
+**Status**: Accepted
+
+**Context**
+The user's Claude install has 9 marketplaces, 123+ plugins, 40+ MCP servers, dozens of skills and agents. In practice many of these were going unused — Claude would write inline custom code instead of invoking the relevant skill/MCP/agent, because the relevance link was implicit and easy to forget. User explicitly stated (2026-04-29): "all those skills plugins mcps are not for the showcase i want the claude to use them for every project intelligently."
+
+**Decision**
+Mirror the graphify-enforcement architecture (DECISION-006): combine a rule + a stack-detection SessionStart hook + a memory entry + a CLAUDE.md router link, all synced via setup.sh / sync-setup.sh.
+
+`tooling-recommender.sh` reads project manifests (`package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Pipfile`, `Package.swift`, `*.xcodeproj`, `build.gradle*`, `pom.xml`) and dependency keyword markers (react, next, vue, tailwind, fastapi, django, flask, torch/tensorflow/pandas, langchain/anthropic/openai, solana/web3/ethers/viem/jito/helius, prisma/drizzle, playwright/jest/vitest, expo, etc.), plus directory markers (`.planning/`, `.github/workflows/`, `Dockerfile`, `*.ipynb`). Output is a `[TOOLING AUDIT]` block listing specific recommended skills/plugins/MCPs/agents per detected category. Universal recommendations (Context7, Serena, claude-mem, code-reviewer) are always appended, so even uncategorised projects get a baseline.
+
+The hook surfaces recommendations; the rule defines the discipline (search audit → search skills → search MCPs → search agents → only roll-your-own when nothing fits, and say why). The memory entry persists the rule across conversations so it survives context truncation.
+
+**Consequences**
+- Every session begins with a project-specific tool shortlist; "I forgot the skill existed" is no longer a valid excuse.
+- False-positive risk in keyword detection (saw `sqlalchemy` matching `alchemy` in early test) — mitigated by requiring word-boundary-ish patterns for crypto keywords.
+- Adds a 9th hook to the system; README, settings.json, setup.sh, and sync-setup.sh all updated in lockstep.
+- Detection is heuristic, not exhaustive — when the audit misses a domain, Claude still has the available-skills list in the system prompt as a backup.
+
+---
+
 <!-- Add new decisions above this line, newest first -->

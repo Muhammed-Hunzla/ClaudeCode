@@ -15,7 +15,7 @@
   - **123+ plugins** across those marketplaces
   - **40+ MCP servers** (CRM, sales, outreach, automation, scraping, ads, payments)
   - **Skills, agents, commands, hooks, rules, templates**
-- User-level rules synced into `setup.sh`: `project-standards.md`, `maintenance.md`, `workflow.md`, `code-quality.md`, `project-onboarding.md`, `graphify.md`
+- User-level rules synced into `setup.sh`: `project-standards.md`, `maintenance.md`, `workflow.md`, `code-quality.md`, `project-onboarding.md`, `graphify.md`, `tooling-awareness.md`
 - Templates synced: `CLAUDE.md`, `PROJECT_SCOPE.md`, `CHANGELOG.md`, `DECISIONS.md`, `KNOWN_ISSUES.md`, `TASKLIST.md`
 - Cross-platform support (Windows compatibility: HTTPS marketplaces, plugin timeout, python3 JSON writer)
 - Auto-update README hook configured — README stays in sync with `setup.sh` after every change
@@ -24,7 +24,7 @@
 
 ## In Progress
 
-_Nothing in progress. Graphify auto-check is live — every GSD project (with `.planning/`) gets a SessionStart graph-staleness check via `graphify-check.sh`. Governance auto-bootstrap remains active for all projects._
+_Nothing in progress. Tooling awareness is live — every project gets a `[TOOLING AUDIT]` recommendation block at SessionStart via `tooling-recommender.sh` (joins graphify auto-check + governance auto-bootstrap as the third per-project enforcement hook)._
 
 ---
 
@@ -59,6 +59,7 @@ _Summary only — details in `.claude/KNOWN_ISSUES.md`._
 | Templates (6 files) | Shipped | Synced into `setup.sh` |
 | Governance enforcement hooks | Shipped | `governance-check.sh` (Stop), `governance-staleness.sh` (PostToolUse) |
 | Graphify auto-check hook | Shipped | `graphify-check.sh` (SessionStart) — flags missing/stale `.planning/graphs/` for any GSD project |
+| Tooling awareness hook | Shipped | `tooling-recommender.sh` (SessionStart) — detects project stack and recommends specific installed tools per session |
 | Project-level `.claude/` for THIS repo | Shipped | Bootstrapped 2026-04-21 |
 
 ---
@@ -74,6 +75,7 @@ _Full records in `.claude/DECISIONS.md`._
 | Cross-platform via runtime detection (not separate scripts) | Single source of truth for install steps | 2026-04 |
 | Governance files enforced via hook scripts (not inline JSON) | JSON quote-escaping is fragile; scripts are easier to edit/test | 2026-04-21 |
 | Graphify enforced via SessionStart hook (not slash command) | User wants automatic intelligent reminder per project; hook detects staleness without manual invocation | 2026-04-29 |
+| Tooling awareness via stack-detection hook (not just rule) | Hundreds of installed skills/plugins/MCPs were unused; rule alone is forgotten across sessions | 2026-04-29 |
 
 ---
 

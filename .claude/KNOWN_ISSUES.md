@@ -33,6 +33,7 @@ _No active bugs as of 2026-04-29._
 | README.md | Doesn't document the new `governance-check.sh` and `governance-staleness.sh` hooks | Medium |
 | setup.sh sync | New governance hook scripts not yet referenced in `setup.sh` | High |
 | graphify-check | Hook is bash + `find` based; on very large repos the staleness scan may take 100ms+ — acceptable but worth profiling later | Low |
+| tooling-recommender | Keyword detection is heuristic — false positives possible (e.g. `sqlalchemy` matched `alchemy` before fix); coverage of niche stacks (Elixir, Clojure, Haskell, etc.) is incomplete | Low |
 
 ---
 
@@ -48,6 +49,7 @@ _No active bugs as of 2026-04-29._
 | — | Project-level governance files not being updated (root cause: `.claude/` didn't exist) | Bootstrap 2026-04-21 |
 | — | Stop hook only reminded about 2 of 5 governance files | 2026-04-21 (this session) |
 | — | No SessionStart enforcement of `/gsd-graphify` — graph could go stale unnoticed across sessions | 2026-04-29 (graphify-check.sh added) |
+| — | Installed skills/plugins/MCPs going unused — Claude wrote inline custom code instead of leveraging the toolbox | 2026-04-29 (tooling-recommender.sh added) |
 
 ---
 

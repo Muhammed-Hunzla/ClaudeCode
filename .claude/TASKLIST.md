@@ -9,7 +9,7 @@
 
 | Status | Count |
 |---|---|
-| Completed | 23 |
+| Completed | 28 |
 | In Progress | 0 |
 | Pending | 1 |
 | Blocked | 0 |
@@ -42,6 +42,11 @@
 - [x] Register `graphify-check.sh` as 4th SessionStart hook in `~/.claude/settings.json`; link rule in user CLAUDE.md router (completed 2026-04-29)
 - [x] Sync graphify rule + hook into `setup.sh` (placeholders + sync-setup.sh map updates) and add SessionStart entries to generated `settings.json` (completed 2026-04-29)
 - [x] Update README.md Hooks section from 7 → 8 hooks; add graphify enforcement paragraph (completed 2026-04-29)
+- [x] Create `~/.claude/rules/tooling-awareness.md` — user-level rule for using installed skills/plugins/MCPs intelligently per project (completed 2026-04-29)
+- [x] Create `~/.claude/hooks/tooling-recommender.sh` — SessionStart hook that detects stack from manifests + dependency keywords and surfaces specific tool recommendations (completed 2026-04-29)
+- [x] Register `tooling-recommender.sh` as 5th SessionStart hook in `~/.claude/settings.json`; link rule in user CLAUDE.md router (completed 2026-04-29)
+- [x] Sync tooling-awareness rule + hook into `setup.sh` (placeholders + sync-setup.sh map updates) and add to generated SessionStart array (completed 2026-04-29)
+- [x] Update README.md Hooks section from 8 → 9 hooks; add tooling awareness paragraph (completed 2026-04-29)
 
 ---
 

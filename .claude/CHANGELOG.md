@@ -8,6 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [2026-04-29 03:25 AM] `~/.claude/rules/tooling-awareness.md` — User-level rule: at every session start, audit installed skills/plugins/MCPs/agents against the project stack and prefer them over writing from scratch. Documents per-domain tool reach-list (React, Vue, FastAPI, Django, ML, LLM, Web3, Testing, GSD, Universal).
+- [2026-04-29 03:25 AM] `~/.claude/hooks/tooling-recommender.sh` — SessionStart hook that detects project stack from manifests (package.json, pyproject.toml, requirements.txt, Cargo.toml, go.mod, Pipfile, Package.swift, *.xcodeproj, build.gradle, pom.xml) + dependency keywords (react, next, vue, tailwind, fastapi, django, torch, langchain, anthropic, solana, web3, ethers, viem, jito, helius, prisma, playwright, vitest, jest, expo) and prints a `[TOOLING AUDIT]` block with specific skill/plugin/MCP/agent recommendations.
+- [2026-04-29 03:25 AM] `tooling-recommender.sh` registered as 5th `SessionStart` hook in `~/.claude/settings.json` and in `setup.sh`-generated settings.
+- [2026-04-29 03:25 AM] User-level CLAUDE.md router: linked `rules/tooling-awareness.md` and added quick-reference line.
+- [2026-04-29 03:25 AM] `setup.sh`: tooling-awareness rule heredoc + tooling-recommender hook heredoc + 3rd SessionStart entry. `sync-setup.sh`: added to rules map and governance hooks list.
 - [2026-04-29 03:00 AM] `~/.claude/rules/graphify.md` — User-level rule: every GSD project (with `.planning/`) must keep its knowledge graph current via `/gsd-graphify build`; defines staleness criteria and hook-driven workflow.
 - [2026-04-29 03:00 AM] `~/.claude/hooks/graphify-check.sh` — SessionStart hook that detects `.planning/`, reads `.planning/config.json`, and emits `[ACTION REQUIRED]` notice when graphify graph is missing or stale (>7d, planning-file changes, or 20+ source-file changes since last build). Silent for non-GSD projects.
 - [2026-04-29 03:00 AM] `graphify-check.sh` registered as 4th `SessionStart` hook in `~/.claude/settings.json`.
@@ -23,6 +28,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [2026-04-21 11:30 PM] `~/.claude/hooks/governance-staleness.sh` — PostToolUse hook that warns when code is edited but governance files haven't been touched.
 
 ### Changed
+- [2026-04-29 03:25 AM] README.md section "13. Hooks" updated from 8 → 9 hooks; added tooling-recommender row and tooling awareness paragraph.
 - [2026-04-29 03:00 AM] README.md section "13. Hooks" updated from 7 → 8 hooks; added graphify-check row and graphify enforcement paragraph.
 - [2026-04-22 12:55 AM] README.md section "13. Hooks" expanded from 4 → 7 hooks with governance enforcement table + rationale paragraph.
 - [2026-04-21 11:30 PM] Stop hook in `~/.claude/settings.json` now calls `governance-check.sh` instead of an inline two-file reminder (was only mentioning CHANGELOG + PROJECT_SCOPE; now covers all 5).
