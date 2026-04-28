@@ -9,7 +9,7 @@
 
 | Status | Count |
 |---|---|
-| Completed | 18 |
+| Completed | 23 |
 | In Progress | 0 |
 | Pending | 1 |
 | Blocked | 0 |
@@ -37,6 +37,11 @@
 - [x] Sync all 3 governance hooks (check, staleness, bootstrap) into `setup.sh` as section "7b. GOVERNANCE HOOKS" (completed 2026-04-22)
 - [x] Extend `sync-setup.sh` with Section 5b to sync hook scripts on future changes (completed 2026-04-22)
 - [x] Update README.md Hooks section from 4 → 7 hooks with governance enforcement rationale (completed 2026-04-22)
+- [x] Create `~/.claude/rules/graphify.md` — user-level rule for auto-using `/gsd-graphify` on every GSD project (completed 2026-04-29)
+- [x] Create `~/.claude/hooks/graphify-check.sh` — SessionStart hook with intelligent staleness detection (>7d, planning changes, 20+ source changes) (completed 2026-04-29)
+- [x] Register `graphify-check.sh` as 4th SessionStart hook in `~/.claude/settings.json`; link rule in user CLAUDE.md router (completed 2026-04-29)
+- [x] Sync graphify rule + hook into `setup.sh` (placeholders + sync-setup.sh map updates) and add SessionStart entries to generated `settings.json` (completed 2026-04-29)
+- [x] Update README.md Hooks section from 7 → 8 hooks; add graphify enforcement paragraph (completed 2026-04-29)
 
 ---
 
@@ -72,4 +77,4 @@ _None_
 
 ---
 
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-29_

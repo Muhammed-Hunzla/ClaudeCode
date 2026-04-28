@@ -98,4 +98,29 @@ Wrap `claude plugin install "$plugin"` in `timeout 60` inside `add_plugin`, and 
 
 ---
 
+### [DECISION-006] — Auto-graphify per project via SessionStart hook
+
+**Date**: 2026-04-29
+**Status**: Accepted
+
+**Context**
+User requested that `/gsd-graphify` be installed at user level and used "intelligently for every project automatically every time — do not forget to use the graphify for every project." The graphify command is gated on `.planning/config.json` having `graphify.enabled: true`, and only matters for GSD-managed projects. A pure rule (markdown) without enforcement would be forgotten across sessions, just like prior governance rules were before hooks.
+
+**Decision**
+Combine four mechanisms so the rule cannot be silently skipped:
+1. `~/.claude/rules/graphify.md` — defines staleness criteria and required actions.
+2. `~/.claude/hooks/graphify-check.sh` — SessionStart hook that detects `.planning/`, reads `config.json`, finds the latest graph file, and emits `[ACTION REQUIRED]` when missing or stale (>7d, planning-file changes, or 20+ source changes). Silent for non-GSD projects.
+3. User-level `CLAUDE.md` router — links the rule and adds a quick-reference line.
+4. Feedback memory — saved to project memory index so the rule persists in conversation context.
+
+Staleness is computed by the hook (not Claude), so the trigger is consistent across sessions. The hook never invokes graphify itself — it only prompts Claude to run the slash command, preserving the user's control over heavyweight rebuilds.
+
+**Consequences**
+- Every GSD project session begins with an automatic graph-freshness check; missing/stale graphs cannot be silently ignored.
+- Non-GSD projects pay zero cost (silent exit).
+- Rule + hook + router + memory all sync into `setup.sh` so fresh installs inherit the behavior.
+- Adds an 8th hook to the system — README and `sync-setup.sh` updated accordingly.
+
+---
+
 <!-- Add new decisions above this line, newest first -->

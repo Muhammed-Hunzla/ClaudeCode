@@ -10,7 +10,7 @@ Active bugs, limitations, and technical debt for Claude Code Environment Setup.
 |---|---|---|---|---|
 | — | — | — | — | — |
 
-_No active bugs as of 2026-04-21._
+_No active bugs as of 2026-04-29._
 
 ---
 
@@ -32,6 +32,7 @@ _No active bugs as of 2026-04-21._
 | `setup.sh` | No verification step at end (no "health check" showing what actually installed) | Medium |
 | README.md | Doesn't document the new `governance-check.sh` and `governance-staleness.sh` hooks | Medium |
 | setup.sh sync | New governance hook scripts not yet referenced in `setup.sh` | High |
+| graphify-check | Hook is bash + `find` based; on very large repos the staleness scan may take 100ms+ — acceptable but worth profiling later | Low |
 
 ---
 
@@ -46,7 +47,8 @@ _No active bugs as of 2026-04-21._
 | — | Windows compatibility: HTTPS marketplaces, python3 JSON write | Commit cc6fbd2 + 1757146 |
 | — | Project-level governance files not being updated (root cause: `.claude/` didn't exist) | Bootstrap 2026-04-21 |
 | — | Stop hook only reminded about 2 of 5 governance files | 2026-04-21 (this session) |
+| — | No SessionStart enforcement of `/gsd-graphify` — graph could go stale unnoticed across sessions | 2026-04-29 (graphify-check.sh added) |
 
 ---
 
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-29_

@@ -8,6 +8,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [2026-04-29 03:00 AM] `~/.claude/rules/graphify.md` — User-level rule: every GSD project (with `.planning/`) must keep its knowledge graph current via `/gsd-graphify build`; defines staleness criteria and hook-driven workflow.
+- [2026-04-29 03:00 AM] `~/.claude/hooks/graphify-check.sh` — SessionStart hook that detects `.planning/`, reads `.planning/config.json`, and emits `[ACTION REQUIRED]` notice when graphify graph is missing or stale (>7d, planning-file changes, or 20+ source-file changes since last build). Silent for non-GSD projects.
+- [2026-04-29 03:00 AM] `graphify-check.sh` registered as 4th `SessionStart` hook in `~/.claude/settings.json`.
+- [2026-04-29 03:00 AM] User-level CLAUDE.md router: linked `rules/graphify.md` and added quick-reference line for GSD projects.
+- [2026-04-29 03:00 AM] `setup.sh`: graphify rule heredoc, graphify-check hook heredoc, `SessionStart` registration in generated `settings.json` (project-bootstrap + graphify-check) — fresh installs now register both hooks.
+- [2026-04-29 03:00 AM] `sync-setup.sh`: added `graphify.md` to rules sync map and `graphify-check.sh` to governance-hook sync list.
 - [2026-04-22 12:55 AM] `~/.claude/hooks/project-bootstrap.sh` — SessionStart hook that auto-creates `.claude/` + 6 governance files from `~/.claude/templates/` when missing in any project directory (detects via `.git/` or common manifest files). Never overwrites.
 - [2026-04-22 12:55 AM] Auto-bootstrap hook registered in `~/.claude/settings.json` SessionStart.
 - [2026-04-22 12:55 AM] `setup.sh` section "7b. GOVERNANCE HOOKS" — installs all 3 governance hook scripts (`governance-check.sh`, `governance-staleness.sh`, `project-bootstrap.sh`) into `~/.claude/hooks/` on fresh setups.
@@ -17,6 +23,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [2026-04-21 11:30 PM] `~/.claude/hooks/governance-staleness.sh` — PostToolUse hook that warns when code is edited but governance files haven't been touched.
 
 ### Changed
+- [2026-04-29 03:00 AM] README.md section "13. Hooks" updated from 7 → 8 hooks; added graphify-check row and graphify enforcement paragraph.
 - [2026-04-22 12:55 AM] README.md section "13. Hooks" expanded from 4 → 7 hooks with governance enforcement table + rationale paragraph.
 - [2026-04-21 11:30 PM] Stop hook in `~/.claude/settings.json` now calls `governance-check.sh` instead of an inline two-file reminder (was only mentioning CHANGELOG + PROJECT_SCOPE; now covers all 5).
 - [2026-04-21 11:30 PM] Added new PostToolUse matcher `Write|Edit|MultiEdit` that runs the staleness check after file modifications.

@@ -271,6 +271,7 @@ Do not define rules here — link to them.
 | Workflow | [rules/workflow.md](rules/workflow.md) | Pre/post task checklist, feature implementation flow |
 | Code Quality | [rules/code-quality.md](rules/code-quality.md) | Single source of truth, naming, DRY principles |
 | Onboarding | [rules/project-onboarding.md](rules/project-onboarding.md) | Project intake flow, user input, task list creation & tracking |
+| Graphify | [rules/graphify.md](rules/graphify.md) | Auto-build/refresh `.planning/graphs/` knowledge graph for every GSD project |
 
 ---
 
@@ -282,6 +283,7 @@ Do not define rules here — link to them.
 - **Missing TASKLIST.md**: Ask user for project documents/details before generating tasks.
 - **One source of truth**: Never duplicate constants, configs, or state. Define once, reference everywhere.
 - **Always verify**: Never claim a task is done without running the verification command and reading the output.
+- **GSD project detected**: If `.planning/` exists and graphify is enabled, run `/gsd-graphify build` whenever the SessionStart hook flags missing/stale graph.
 
 ---
 
@@ -725,6 +727,63 @@ When a task is completed AND verified (tests pass, functionality works):
 - **Keep it current** — TASKLIST.md must reflect reality at all times, updated after every task
 EOF
 success "project-onboarding.md"
+
+cat > "$CLAUDE_DIR/rules/graphify.md" << 'EOF'
+# Graphify — Project Knowledge Graph
+
+## What This Is
+
+Every GSD-enabled project (any project with a `.planning/` directory) **must** use `/gsd-graphify` to build and maintain its knowledge graph. The graph lives in `.planning/graphs/` and powers cross-phase reasoning, dependency lookup, and faster query/answer cycles.
+
+## When to Use Graphify
+
+### Automatic — at every session start
+
+The `~/.claude/hooks/graphify-check.sh` SessionStart hook runs automatically. It will:
+
+1. Detect whether the current directory has `.planning/`
+2. If yes, read `.planning/config.json` and check `graphify.enabled`
+3. If enabled, ask graphify for status and compare graph mtime against recent file changes
+4. Emit one of these notices:
+   - **`[ACTION REQUIRED] Graphify graph missing — run /gsd-graphify build`**
+   - **`[ACTION REQUIRED] Graphify graph stale — run /gsd-graphify build`**
+   - **`[HINT] .planning/ found but graphify disabled — consider enabling`**
+   - Silent (no notice) if graph is fresh or project has no `.planning/`
+
+### What to do when you see a notice
+
+- **Missing graph** → run `/gsd-graphify build` immediately, before any other work
+- **Stale graph** → rebuild with `/gsd-graphify build` before answering questions that need cross-phase reasoning
+- **Disabled hint** → ask the user whether to enable graphify (`gsd-tools config-set graphify.enabled true`)
+
+### Manual
+
+- `/gsd-graphify status` — inspect the graph
+- `/gsd-graphify query <term>` — search the graph
+- `/gsd-graphify diff` — see what changed since last build
+
+## Staleness Definition
+
+The graph is **stale** if any of these are true:
+
+- Files changed in `.planning/phases/` or `.planning/milestones/` are newer than the graph file
+- More than 20 source files in the project have mtimes newer than the graph
+- The graph is older than 7 days
+
+The hook handles this check — you don't need to compute it manually.
+
+## Rules
+
+- **Never skip graphify** on a project that has it enabled — it's a load-bearing input for GSD reasoning
+- **Don't run `build` on every prompt** — the hook tells you when. If the hook is silent, the graph is fresh
+- **Respect disabled projects** — if the user has `graphify.enabled: false`, don't lecture them; just ask once if they want it on
+- **Non-GSD projects** — if `.planning/` doesn't exist, graphify doesn't apply. Don't try to bootstrap GSD just to enable graphify
+
+## Why
+
+The knowledge graph is the difference between answering "what files reference this decision?" in 30 seconds vs. 30 minutes. Skipping it costs you (and the user) real time on every cross-phase question. The hook makes it free — there's no excuse to ignore it.
+EOF
+success "graphify.md"
 
 # =============================================================================
 # 6. TEMPLATES
@@ -1278,11 +1337,126 @@ fi
 exit 0
 HOOK_EOF
 
+cat > "$CLAUDE_DIR/hooks/graphify-check.sh" << 'HOOK_EOF'
+#!/usr/bin/env bash
+# graphify-check.sh — SessionStart hook
+# Detects GSD projects, checks graphify status, and emits an [ACTION REQUIRED]
+# notice when the knowledge graph is missing or stale so Claude runs
+# /gsd-graphify build before doing other work.
+#
+# Silent (no output) when:
+#   - Not in a project (HOME or non-project dir)
+#   - No .planning/ directory
+#   - graphify.enabled != true
+#   - Graph is fresh
+#
+# Per ~/.claude/rules/graphify.md.
+
+set -u
+
+# Skip if we're at $HOME — never bootstrap there
+if [ "$(pwd)" = "$HOME" ]; then
+  exit 0
+fi
+
+# Must have a .planning/ directory to be a GSD project
+[ -d ".planning" ] || exit 0
+
+CONFIG=".planning/config.json"
+GRAPHS_DIR=".planning/graphs"
+GSD_TOOLS="$HOME/.claude/get-shit-done/bin/gsd-tools.cjs"
+
+# Config-gate: if no config.json, GSD is partially initialized — silent skip
+[ -f "$CONFIG" ] || exit 0
+
+# Check graphify.enabled in config.json without requiring jq
+ENABLED=$(node -e "
+  try {
+    const c = JSON.parse(require('fs').readFileSync('$CONFIG','utf8'));
+    process.stdout.write(c && c.graphify && c.graphify.enabled === true ? 'true' : 'false');
+  } catch(e) { process.stdout.write('false'); }
+" 2>/dev/null)
+
+if [ "$ENABLED" != "true" ]; then
+  echo ""
+  echo "[HINT] .planning/ found but graphify is disabled."
+  echo "  Enable: node \"$GSD_TOOLS\" config-set graphify.enabled true"
+  echo "  Then run /gsd-graphify build"
+  exit 0
+fi
+
+# Find the most recent graph file (if any)
+GRAPH_FILE=""
+if [ -d "$GRAPHS_DIR" ]; then
+  GRAPH_FILE=$(find "$GRAPHS_DIR" -type f \( -name '*.json' -o -name '*.graph' -o -name '*.gz' \) -print 2>/dev/null \
+    | head -n 100 \
+    | xargs -I{} stat -f '%m %N' {} 2>/dev/null \
+    | sort -rn \
+    | head -n 1 \
+    | awk '{ $1=""; sub(/^ /,""); print }')
+fi
+
+if [ -z "$GRAPH_FILE" ] || [ ! -f "$GRAPH_FILE" ]; then
+  echo ""
+  echo "[ACTION REQUIRED] Graphify enabled but no graph found in $GRAPHS_DIR"
+  echo "  Run: /gsd-graphify build"
+  echo "  (Per ~/.claude/rules/graphify.md — build before any cross-phase work.)"
+  exit 0
+fi
+
+# Staleness checks
+GRAPH_MTIME=$(stat -f '%m' "$GRAPH_FILE" 2>/dev/null || echo 0)
+NOW=$(date +%s)
+AGE_DAYS=$(( (NOW - GRAPH_MTIME) / 86400 ))
+
+STALE_REASON=""
+
+# 1. Older than 7 days
+if [ "$AGE_DAYS" -ge 7 ]; then
+  STALE_REASON="graph is ${AGE_DAYS} days old (>= 7)"
+fi
+
+# 2. Planning files newer than graph
+if [ -z "$STALE_REASON" ]; then
+  NEWER_PLANNING=$(find .planning/phases .planning/milestones -type f -newer "$GRAPH_FILE" 2>/dev/null | head -n 1)
+  if [ -n "$NEWER_PLANNING" ]; then
+    STALE_REASON="planning files changed after last build (e.g. $NEWER_PLANNING)"
+  fi
+fi
+
+# 3. >= 20 source files newer than graph (skip .git, node_modules, .planning, dist, build, .venv)
+if [ -z "$STALE_REASON" ]; then
+  NEWER_SRC_COUNT=$(find . -type f -newer "$GRAPH_FILE" \
+    -not -path './.git/*' \
+    -not -path './node_modules/*' \
+    -not -path './.planning/*' \
+    -not -path './dist/*' \
+    -not -path './build/*' \
+    -not -path './.venv/*' \
+    -not -path './venv/*' \
+    -not -path './__pycache__/*' \
+    2>/dev/null | head -n 25 | wc -l | tr -d ' ')
+  if [ "${NEWER_SRC_COUNT:-0}" -ge 20 ]; then
+    STALE_REASON="${NEWER_SRC_COUNT}+ source files changed since last build"
+  fi
+fi
+
+if [ -n "$STALE_REASON" ]; then
+  echo ""
+  echo "[ACTION REQUIRED] Graphify graph is STALE — $STALE_REASON"
+  echo "  Run: /gsd-graphify build"
+  echo "  (Per ~/.claude/rules/graphify.md — rebuild before cross-phase reasoning.)"
+fi
+
+exit 0
+HOOK_EOF
+
 chmod +x "$CLAUDE_DIR/hooks/governance-check.sh" \
          "$CLAUDE_DIR/hooks/governance-staleness.sh" \
-         "$CLAUDE_DIR/hooks/project-bootstrap.sh"
+         "$CLAUDE_DIR/hooks/project-bootstrap.sh" \
+         "$CLAUDE_DIR/hooks/graphify-check.sh"
 
-success "3 governance hooks (check, staleness, bootstrap)"
+success "4 governance hooks (check, staleness, bootstrap, graphify)"
 
 # =============================================================================
 # 8. MEMORY
@@ -2289,7 +2463,11 @@ settings = {
     'SessionEnd': [{
       'matcher': '',
       'hooks': [{'type': 'command', 'command': sync_cmd}]
-    }]
+    }],
+    'SessionStart': [
+      {'hooks': [{'type': 'command', 'command': 'bash $HOME/.claude/hooks/project-bootstrap.sh'}]},
+      {'hooks': [{'type': 'command', 'command': 'bash $HOME/.claude/hooks/graphify-check.sh'}]}
+    ]
   },
   'enabledPlugins': {
     'commit-commands@claude-plugins-official': True,

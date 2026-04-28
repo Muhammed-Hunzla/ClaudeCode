@@ -89,6 +89,7 @@ rules = {
     "workflow.md":          r'cat > "\$CLAUDE_DIR/rules/workflow\.md" << \'EOF\'',
     "code-quality.md":      r'cat > "\$CLAUDE_DIR/rules/code-quality\.md" << \'EOF\'',
     "project-onboarding.md": r'cat > "\$CLAUDE_DIR/rules/project-onboarding\.md" << \'EOF\'',
+    "graphify.md":          r'cat > "\$CLAUDE_DIR/rules/graphify\.md" << \'EOF\'',
 }
 for filename, pattern in rules.items():
     content = sync_file(content, os.path.join(CLAUDE_DIR, "rules", filename), pattern, "EOF")
@@ -145,7 +146,7 @@ if os.path.isdir(skills_dir):
 # =========================================================================
 
 print("[sync-setup] Checking governance hooks...")
-for hook_name in ["governance-check.sh", "governance-staleness.sh", "project-bootstrap.sh"]:
+for hook_name in ["governance-check.sh", "governance-staleness.sh", "project-bootstrap.sh", "graphify-check.sh"]:
     hook_path = os.path.join(CLAUDE_DIR, "hooks", hook_name)
     if os.path.isfile(hook_path):
         content = sync_file(content, hook_path,
